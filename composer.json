@@ -1,0 +1,38 @@
+{
+  "name": "pgframework/pg-module-installer",
+  "description": "A composer installer for PgFramework Module.",
+  "type": "composer-plugin",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "William Lety",
+      "homepage": "https://github.com/willy68"
+    }
+  ],
+  "require": {
+    "php": ">=8.0",
+    "composer-plugin-api": "^2.0"
+  },
+  "require-dev": {
+    "composer/composer": "^2.0",
+    "squizlabs/php_codesniffer": "^3.5",
+    "phpunit/phpunit": "^9.5"
+  },
+  "autoload": {
+    "psr-4": {
+      "PgFramework\\Composer\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Cake\\Test\\Composer\\": "tests/Composer/"
+    }
+  },
+  "extra": {
+    "class": "PgFramework\\Composer\\PgInstaller"
+  },
+  "config": {
+    "sort-packages": true
+  },
+  "prefer-stable": true
+}
