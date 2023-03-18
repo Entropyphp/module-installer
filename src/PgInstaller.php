@@ -46,7 +46,7 @@ class PgInstaller implements PluginInterface, EventSubscriberInterface
     /**
      * Called whenever composer (re)generates the autoloader.
      *
-     * Recreates CakePHP's plugin path map, based on composer information
+     * Recreates PgFramework Module path map, based on composer information
      * and available app plugins.
      *
      * @param Event $event Composer's event object.
