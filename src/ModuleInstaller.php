@@ -95,19 +95,16 @@ class ModuleInstaller implements
 
         $packages = $this->composer->getRepositoryManager()->getLocalRepository()->getPackages();
         $this->io->write('<info>Search pg-modules packages</info>');
-        $this->findModulePackage($packages);
+        $packages = $this->findModulesPackages($packages);
+        $this->findModulesClass($packages);
 
         $configFile = $this->getConfigFile($projectDir);
         $this->writeConfigFile($configFile);
     }
 
-    /**
-     * @param  BasePackage[] $packages
-     * @return array
-     */
-    protected function findModulePackage(array $packages): array
+    protected function findModulesPackages(array $packages): array
     {
-        $modules = [];
+        $modulesPackages = [];
         foreach ($packages as $package) {
             if ($package->getType() === 'pg-module') {
                 $this->io->write(
@@ -116,9 +113,23 @@ class ModuleInstaller implements
                         $package->getPrettyName()
                     )
                 );
-                $path = $this->composer->getInstallationManager()->getInstallPath($package);
-                $modules = $this->findModuleClass($package, $path);
+                $modulesPackages[] = $package;
             }
+        }
+        return $modulesPackages;
+
+    }
+
+    /**
+     * @param BasePackage[] $packages
+     * @return array
+     */
+    protected function findModulesClass(array $packages): array
+    {
+        $modules = [];
+        foreach ($packages as $package) {
+            $path = $this->composer->getInstallationManager()->getInstallPath($package);
+            $modules = $this->findModuleClass($package, $path);
         }
         return $modules;
     }
@@ -234,6 +245,7 @@ class ModuleInstaller implements
     protected function writeConfigFile(string $configFile): bool
     {
         if (!is_file($configFile)) {
+            $this->io->write(sprintf('Config file %s don\'t exists in this système, abort', $configFile));
             return false;
         }
         $content = file_get_contents($configFile);
