@@ -45,13 +45,11 @@ class ModuleInstallerTests extends TestCase
     protected array $testDirs = [
         '',
         'vendor',
-        'plugins',
-        'plugins/Foo',
-        'plugins/Fee',
-        'plugins/Foe',
-        'plugins/Fum',
-        'app_plugins',
-        'app_plugins/Bar',
+        'src',
+        'src/Bootstrap',
+        'src/Fee',
+        'src/Foe',
+        'src/Fum',
     ];
 
     /**
@@ -63,8 +61,8 @@ class ModuleInstallerTests extends TestCase
     {
         parent::setUp();
 
-        $this->package = new Package('cake/plugin', '1.0', '1.0');
-        $this->package->setType('cakephp-plugin');
+        $this->package = new Package('pgframework/RouterModule', '1.0', '1.0');
+        $this->package->setType('pg-module');
 
         $this->path = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'module-installer-test';
 
@@ -104,8 +102,8 @@ class ModuleInstallerTests extends TestCase
 
         $dirs = array_reverse($this->testDirs);
 
-        if (is_file($this->path . '/vendor/cakephp-plugins.php')) {
-            unlink($this->path . '/vendor/cakephp-plugins.php');
+        if (is_file($this->path . '/src/Bootstrap/PgFramework.php')) {
+            unlink($this->path . '/src/Bootstrap/PgFramework.php');
         }
 
         foreach ($dirs as $dir) {
