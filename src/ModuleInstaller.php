@@ -96,6 +96,10 @@ class ModuleInstaller implements
         $packages = $this->composer->getRepositoryManager()->getLocalRepository()->getPackages();
         $this->io->write('<info>Search pg-modules packages</info>');
         $packages = $this->findModulesPackages($packages);
+        if (empty($packages)) {
+            $this->io->write('<info>pg-modules packages not found, abort</info>');
+            return;
+        }
         $this->findModulesClass($packages);
 
         $configFile = $this->getConfigFile($projectDir);
@@ -245,7 +249,12 @@ class ModuleInstaller implements
     protected function writeConfigFile(string $configFile): bool
     {
         if (!is_file($configFile)) {
-            $this->io->write(sprintf('Config file %s don\'t exists in this système, abort', $configFile));
+            $this->io->write(
+                sprintf(
+                    '<info>Config file %s don\'t exists in this système, abort</info>',
+                    $configFile
+                )
+            );
             return false;
         }
         $content = file_get_contents($configFile);
