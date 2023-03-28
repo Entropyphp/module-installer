@@ -262,10 +262,15 @@ class ModuleInstaller implements
         if (preg_match($regex, $content, $m)) {
             $writeFile = false;
             $useStr = $m[1];
+            if (!$useStr) {
+                $useStr = "";
+            }
+            $useStr = trim($useStr);
+            $useStr = $useStr . "\n";
             $modulesStr = $m[2];
             foreach ($this->modules as $classModules) {
                 foreach ($classModules as $useStatement => $classModule) {
-                    if (str_contains($content, $classModule . '::class')) {
+                    if (str_contains($modulesStr, $classModule . '::class')) {
                         $this->io->write(
                             sprintf(
                                 '<info>Module %s already exist in config file</info>',
@@ -276,9 +281,6 @@ class ModuleInstaller implements
                     }
                     $writeFile = true;
                     $modulesStr .= "\t\t$classModule::class,\n";
-                    if (!$useStr) {
-                        $useStr = "";
-                    }
                     $useStr .= "use $useStatement;\n";
 
                     $this->io->write(
@@ -290,11 +292,13 @@ class ModuleInstaller implements
                 }
             }
             if ($writeFile) {
+                $useStr = trim($useStr);
                 $modulesStr = trim($modulesStr);
                 return (bool)$this->writeFile($configFile, $useStr, "\t\t" . $modulesStr);
             }
         }
-        return true;
+        $this->io->write('<info>Nothing to update in config file.</info>');
+        return false;
     }
 
     protected function writeFile(string $configFile, string $useStr, string $modulesStr): bool|int
