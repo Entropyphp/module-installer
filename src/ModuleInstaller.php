@@ -106,7 +106,7 @@ class ModuleInstaller implements
         $this->writeConfigFile($configFile);
     }
 
-    protected function findModulesPackages(array $packages): array
+    public function findModulesPackages(array $packages): array
     {
         $modulesPackages = [];
         foreach ($packages as $package) {
@@ -121,14 +121,13 @@ class ModuleInstaller implements
             }
         }
         return $modulesPackages;
-
     }
 
     /**
      * @param BasePackage[] $packages
      * @return array
      */
-    protected function findModulesClass(array $packages): array
+    public function findModulesClass(array $packages): array
     {
         $modules = [];
         foreach ($packages as $package) {
@@ -138,7 +137,7 @@ class ModuleInstaller implements
         return $modules;
     }
 
-    protected function findModuleClass(BasePackage $package, string $packagePath): array
+    public function findModuleClass(BasePackage $package, string $packagePath): array
     {
         $modules = [];
         $autoload = $package->getAutoload();
@@ -158,7 +157,7 @@ class ModuleInstaller implements
         return $modules;
     }
 
-    protected function mapNamespacePaths(array $pathMap, string $packagePath): array
+    public function mapNamespacePaths(array $pathMap, string $packagePath): array
     {
         $result = [];
         foreach ($pathMap as $namespace => $paths) {
@@ -176,7 +175,7 @@ class ModuleInstaller implements
         return $result;
     }
 
-    protected function getPhpFile(array $result): array
+    public function getPhpFile(array $result): array
     {
         $files = [];
         foreach ($result as $dir) {
@@ -207,11 +206,9 @@ class ModuleInstaller implements
         );
     }
 
-    protected function getModulesClass(array $files): array
+    public function getModulesClass(array $files): array
     {
-        /**
- * @var SplFileInfo $file
-*/
+        /** @var SplFileInfo $file */
         foreach ($files as $file) {
             $content = file_get_contents((string)$file);
             if (
@@ -235,7 +232,7 @@ class ModuleInstaller implements
         return $this->modules;
     }
 
-    protected function getConfigFile(string $projectDir): string
+    public function getConfigFile(string $projectDir): string
     {
         return $projectDir .
             DIRECTORY_SEPARATOR .
@@ -246,7 +243,7 @@ class ModuleInstaller implements
             'PgFramework.php';
     }
 
-    protected function writeConfigFile(string $configFile): bool
+    public function writeConfigFile(string $configFile): bool
     {
         if (!is_file($configFile)) {
             $this->io->write(
@@ -301,7 +298,7 @@ class ModuleInstaller implements
         return false;
     }
 
-    protected function writeFile(string $configFile, string $useStr, string $modulesStr): bool|int
+    public function writeFile(string $configFile, string $useStr, string $modulesStr): bool|int
     {
         $content = <<<php
 <?php
