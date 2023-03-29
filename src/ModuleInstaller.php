@@ -258,7 +258,7 @@ class ModuleInstaller implements
             return false;
         }
         $content = file_get_contents($configFile);
-        $regex = '/declare\(strict_types=1\);\s+([\w\W]*)\s+return\s+\[\s+\'modules\'\s+=>\s+\[\s+([\W\w]+)\s+]\s+/';
+        $regex = '/declare\S+\s*;\s+([use\S\s]*)\s+return\s+\[\s+\'modules\'\s+=>\s+\[\s+([\S\s]+)\s+]\s+/';
         if (preg_match($regex, $content, $m)) {
             $writeFile = false;
             $useStr = $m[1];
