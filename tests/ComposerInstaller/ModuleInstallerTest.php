@@ -12,6 +12,8 @@ use Composer\Package\BasePackage;
 use Composer\Package\Package;
 use Composer\Repository\RepositoryManager;
 use Composer\Util\HttpDownloader;
+use org\bovigo\vfs\vfsStream;
+use org\bovigo\vfs\vfsStreamDirectory;
 use PgFramework\ComposerInstaller\ModuleInstaller;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -40,6 +42,11 @@ class ModuleInstallerTest extends TestCase
     protected ModuleInstaller $plugin;
 
     /**
+     * @var vfsStreamDirectory
+     */
+    protected vfsStreamDirectory $projectRoot;
+
+    /**
      * Directories used during tests
      *
      * @var array
@@ -63,16 +70,11 @@ class ModuleInstallerTest extends TestCase
     {
         parent::setUp();
 
-        $this->package = new Package('pgframework/RouterModule', '1.0', '1.0');
+        $this->package = new Package('pg-framework/RouterModule', '1.0', '1.0');
         $this->package->setType('pg-module');
 
-        $this->path = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'module-installer-test';
-
-        foreach ($this->testDirs as $dir) {
-            if (!is_dir($this->path . '/' . $dir)) {
-                mkdir($this->path . '/' . $dir);
-            }
-        }
+        $this->projectRoot = vfsStream::setup('project');
+        $this->path = vfsStream::url('project');
 
         $content = <<<php
 <?php
@@ -89,7 +91,7 @@ return [
 ];
 
 php;
-        file_put_contents($this->path . '/src/Bootstrap/pgFramework.php', $content);
+        $this->createModulesConfig('/src/Bootstrap/pgFramework.php', $content);
 
         $this->composer = new Composer();
         $config = new Config();
@@ -129,18 +131,24 @@ php;
     public function tearDown(): void
     {
         parent::tearDown();
+    }
 
-        $dirs = array_reverse($this->testDirs);
+    protected function createModulesConfig(string $path, string $content)
+    {
+        vfsStream::newDirectory(dirname($path))
+            ->at($this->projectRoot);
+        vfsStream::newFile($path)
+            ->at($this->projectRoot)
+            ->setContent($content);
+    }
 
-        if (is_file($this->path . '/src/Bootstrap/PgFramework.php')) {
-            unlink($this->path . '/src/Bootstrap/PgFramework.php');
-        }
-
-        foreach ($dirs as $dir) {
-            if (is_dir($this->path . '/' . $dir)) {
-                rmdir($this->path . '/' . $dir);
-            }
-        }
+    protected function createModuleClass(string $path, string $content)
+    {
+        vfsStream::newDirectory(dirname($path))
+            ->at($this->projectRoot);
+        vfsStream::newFile($path)
+            ->at($this->projectRoot)
+            ->setContent($content);
     }
 
     public function testGetSubscribedEvents()
@@ -224,25 +232,40 @@ php;
 
     public function testFindModulesClass()
     {
-        $plugin1 = new Package('pg-framework/router', '1.0', '1.0');
-        $plugin1->setType('library');
+        $plugin1 = new Package('pgframework/router', '1.0', '1.0');
+        $plugin1->setType('pg-module');
         $plugin1->setAutoload([
             'psr-4' => [
                 'Router' => 'src/',
             ],
         ]);
 
-        $plugin2 = new Package('pg-framework/auth', '1.0', '1.0');
-        $plugin2->setType('library');
+        $content = <<<PHP
+
+PHP;
+
+        $this->createModuleClass('vendor/pgframework/router/src/RouterModule', $content);
+
+        $plugin2 = new Package('pgframework/auth', '1.0', '1.0');
+        $plugin2->setType('pg-module');
         $plugin2->setAutoload([
             'psr-4' => [
                 'Auth' => 'src/',
             ],
         ]);
 
+        $plugin3 = new Package('pg-framework/fake-module', '1.0', '1.0');
+        $plugin3->setType('pg-module');
+        $plugin3->setAutoload([
+            'psr-4' => [
+                'FakeModule' => 'src/',
+            ],
+        ]);
+
         $packages = [
             $plugin1,
             $plugin2,
+            $plugin3,
         ];
 
         $this->installationManager
