@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ComposerInstaller;
 
+use CallbackFilterIterator;
 use Composer\Composer;
 use Composer\Config;
 use Composer\Installer\InstallationManager;
@@ -12,11 +13,16 @@ use Composer\Package\BasePackage;
 use Composer\Package\Package;
 use Composer\Repository\RepositoryManager;
 use Composer\Util\HttpDownloader;
+use FilesystemIterator;
 use org\bovigo\vfs\vfsStream;
 use org\bovigo\vfs\vfsStreamDirectory;
+use org\bovigo\vfs\visitor\vfsStreamStructureVisitor;
 use PgFramework\ComposerInstaller\ModuleInstaller;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use RecursiveDirectoryIterator;
+use RecursiveIteratorIterator;
+use SplFileInfo;
 
 class ModuleInstallerTest extends TestCase
 {
@@ -61,6 +67,37 @@ class ModuleInstallerTest extends TestCase
         'src/Fum',
     ];
 
+    protected array $structure = [
+        'src' => [
+            'Bootstrap' => [
+                'PgFramework.php' => 'PgFramework.php'
+            ]
+        ],
+        'vendor' => [
+            'pgframework' => [
+                'router' => [
+                    'src' => [
+                        'RouterModule.php' => 'RouterModule.php'
+                    ]
+                ],
+                'auth' => [
+                    'src' => [
+                        'Auth' => [
+                            'AuthModule.php' => 'AuthModule.php'
+                        ]
+                    ]
+                ],
+                'fake-module' => [
+                    'src' => [
+                        'FakeModule.php' => 'FakeModule.php'
+                    ]
+                ]
+            ]
+        ]
+    ];
+
+    protected string $path;
+
     /**
      * setUp
      *
@@ -73,25 +110,8 @@ class ModuleInstallerTest extends TestCase
         $this->package = new Package('pg-framework/RouterModule', '1.0', '1.0');
         $this->package->setType('pg-module');
 
-        $this->projectRoot = vfsStream::setup('project');
+        $this->projectRoot = vfsStream::setup('project', 0777, $this->structure);
         $this->path = vfsStream::url('project');
-
-        $content = <<<php
-<?php
-
-/** This file is auto generated, do not edit */
-
-declare(strict_types=1);
-
-%s
-return [
-    'modules' => [
-%s
-    ]
-];
-
-php;
-        $this->createModulesConfig('/src/Bootstrap/pgFramework.php', $content);
 
         $this->composer = new Composer();
         $config = new Config();
@@ -133,22 +153,18 @@ php;
         parent::tearDown();
     }
 
-    protected function createModulesConfig(string $path, string $content)
+    protected function createModulesConfig(string $path, string $content): string
     {
-        vfsStream::newDirectory(dirname($path))
-            ->at($this->projectRoot);
-        vfsStream::newFile($path)
-            ->at($this->projectRoot)
-            ->setContent($content);
+        $path = $this->path . '/' . $path;
+        file_put_contents($path, $content);
+        return $path;
     }
 
-    protected function createModuleClass(string $path, string $content)
+    protected function createModuleClass(string $path, string $content): string
     {
-        vfsStream::newDirectory(dirname($path))
-            ->at($this->projectRoot);
-        vfsStream::newFile($path)
-            ->at($this->projectRoot)
-            ->setContent($content);
+        $path = $this->path . '/' . $path;
+        file_put_contents($path, $content);
+        return $path;
     }
 
     public function testGetSubscribedEvents()
@@ -162,8 +178,22 @@ php;
 
     public function testGetConfigFilePath()
     {
+        $content = <<<php
+<?php
+
+/** This file is auto generated, do not edit */
+
+declare(strict_types=1);
+
+return [
+    'modules' => [
+    ]
+];
+
+php;
+        $this->createModulesConfig('src/Bootstrap/PgFramework.php', $content);
         $path = $this->plugin->getConfigFile($this->path);
-        $this->assertFileExists(dirname($path));
+        $this->assertFileExists($path);
     }
 
     public function testFindModulesPackages()
@@ -232,6 +262,28 @@ php;
 
     public function testFindModulesClass()
     {
+        $expect = [];
+
+        $routerNs = 'Router';
+        $routerClass = 'RouterModule';
+        $expect[$routerNs] = [$routerNs . '\\' . $routerClass => $routerClass];
+        $content = <<<PHP
+<?php
+
+declare(strict_types=1);
+
+namespace %s;
+
+use PgFramework\Module;
+
+class %s extends Module
+{
+}
+
+PHP;
+        $content = sprintf($content, $routerNs, $routerClass);
+        $this->createModuleClass('vendor/pgframework/router/src/RouterModule.php', $content);
+        $this->assertFileExists($this->path . '/vendor/pgframework/router/src/RouterModule.php');
         $plugin1 = new Package('pgframework/router', '1.0', '1.0');
         $plugin1->setType('pg-module');
         $plugin1->setAutoload([
@@ -240,12 +292,26 @@ php;
             ],
         ]);
 
+        $authNs = 'Auth/Auth';
+        $authClass = 'AuthModule';
+        $expect[$authNs] = [$authNs . '\\' . $authClass => $authClass];
         $content = <<<PHP
+<?php
+
+declare(strict_types=1);
+
+namespace %s;
+
+use PgFramework\Module;
+
+class %s extends Module
+{
+}
 
 PHP;
-
-        $this->createModuleClass('vendor/pgframework/router/src/RouterModule', $content);
-
+        $content = sprintf($content, $authNs, $authClass);
+        $this->createModuleClass('vendor/pgframework/auth/src/Auth/AuthModule.php', $content);
+        $this->assertFileExists($this->path . '/vendor/pgframework/auth/src/Auth/AuthModule.php');
         $plugin2 = new Package('pgframework/auth', '1.0', '1.0');
         $plugin2->setType('pg-module');
         $plugin2->setAutoload([
@@ -254,7 +320,27 @@ PHP;
             ],
         ]);
 
-        $plugin3 = new Package('pg-framework/fake-module', '1.0', '1.0');
+        $fakeNs = 'FakeModule';
+        $fakeClass = 'FakeModule';
+        $expect[$fakeNs] = [$fakeNs . '\\' . $fakeClass => $fakeClass];
+        $content = <<<PHP
+<?php
+
+declare(strict_types=1);
+
+namespace %s;
+
+use PgFramework\Module;
+
+class %s extends Module
+{
+}
+
+PHP;
+        $content = sprintf($content, $fakeNs, $fakeClass);
+        $this->createModuleClass('vendor/pgframework/fake-module/src/FakeModule.php', $content);
+        $this->assertFileExists($this->path . '/vendor/pgframework/fake-module/src/FakeModule.php');
+        $plugin3 = new Package('pgframework/fake-module', '1.0', '1.0');
         $plugin3->setType('pg-module');
         $plugin3->setAutoload([
             'psr-4' => [
@@ -272,11 +358,15 @@ PHP;
             ->method('getInstallPath')
             ->willReturnCallback(
                 function (BasePackage $package) {
-                    return $this->path . '/vendor' . '/' . $package->getPrettyName() . $package->getTargetDir();
+                    return $this->path .
+                        '/vendor/' .
+                        $package->getPrettyName() .
+                        $package->getTargetDir();
                 }
             );
 
         $modules = $this->plugin->findModulesClass($packages);
+        $this->assertSame($expect, $modules);
     }
 
 }

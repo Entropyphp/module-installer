@@ -148,7 +148,7 @@ class ModuleInstaller implements
 
             $paths = $this->mapNamespacePaths($pathMap, $packagePath);
             foreach ($paths as $path) {
-                $files = $this->getPhpFile($path);
+                $files = $this->getPhpFiles($path);
                 if (!empty($files)) {
                     $modules = $this->getModulesClass($files);
                 }
@@ -175,7 +175,7 @@ class ModuleInstaller implements
         return $result;
     }
 
-    public function getPhpFile(array $result): array
+    public function getPhpFiles(array $result): array
     {
         $files = [];
         foreach ($result as $dir) {
