@@ -10,7 +10,7 @@ use Composer\Installer\InstallationManager;
 use Composer\IO\IOInterface;
 use Composer\Package\BasePackage;
 use Composer\Package\Package;
-use Composer\Repository\InstalledRepository;
+use Composer\Repository\InstalledFilesystemRepository;
 use Composer\Repository\RepositoryManager;
 use Composer\Script\Event;
 use Composer\Util\HttpDownloader;
@@ -97,11 +97,24 @@ class ModuleInstallerTest extends TestCase
 
         $this->composer = new Composer();
         $config = new Config();
-        $config->merge([
-            'vendor-dir' => $this->path . '/vendor',
-        ]);
+        $config->merge(['vendor-dir' => $this->path . '/vendor']);
 
         $this->composer->setConfig($config);
+
+        $mockComposer = $this->getMockBuilder(Composer::class)
+            ->disableOriginalConstructor()
+            ->getMock();
+        $this->mockComposer = $mockComposer;
+
+        $mockConfig = $this->getMockBuilder(Config::class)->getMock();
+        $this->mockConfig = $mockConfig;
+        $this->mockConfig
+            ->method('get')
+            ->with('vendor-dir')
+            ->willReturn(['vendor-dir' => $this->path . '/vendor']);
+        $this->mockComposer
+            ->method('getConfig')
+            ->willReturn($this->mockConfig);
 
         /** @var IOInterface&MockObject $io */
         $io = $this->getMockBuilder(IOInterface::class)->getMock();
@@ -115,6 +128,16 @@ class ModuleInstallerTest extends TestCase
             $httpDownloader
         );
         $this->composer->setRepositoryManager($rm);
+        $mockRepositoryManager = $this->getMockBuilder(RepositoryManager::class)
+            ->disableOriginalConstructor()
+            ->getMock();
+        $this->mockRepositoryManager = $mockRepositoryManager;
+
+        $mockInstalledRepository = $this->getMockBuilder(InstalledFilesystemRepository::class)
+            ->disableOriginalConstructor()
+            ->getMock();
+        $this->mockInstalledRepository = $mockInstalledRepository;
+        $rm->setLocalRepository($mockInstalledRepository);
 
         $mockPlugin = $this->getMockBuilder(ModuleInstaller::class)->getMock();
         $this->mockPlugin = $mockPlugin;
@@ -128,11 +151,6 @@ class ModuleInstallerTest extends TestCase
 
         $this->plugin = new ModuleInstaller();
         $this->plugin->activate($this->composer, $this->io);
-    }
-
-    public function tearDown(): void
-    {
-        parent::tearDown();
     }
 
     protected function createModulesConfig(string $path, string $content): string
@@ -202,6 +220,10 @@ php;
             $plugin2,
         ];
 
+        $this->io
+            ->expects(self::exactly(2))
+            ->method('write');
+
         $return = $this->plugin->findModulesPackages($packages);
 
         $expected = [
@@ -211,7 +233,30 @@ php;
         $this->assertSame($expected, $return, 'Composer-loaded module should be listed');
     }
 
+    public function testPluginAbortEarlyWithModulesPackagesEmpty()
+    {
+        $packages = $this->getNoPgModulePackages();
+        $this->mockInstalledRepository
+            ->method('getPackages')
+            ->willReturn($packages);
+        $this->io
+            ->expects(self::exactly(2))
+            ->method('write');
+        $this->plugin->postAutoloadDump(new Event('post-autoload-dump', $this->composer, $this->io));
+    }
+
     public function testFindModulesPackagesEmpty()
+    {
+        $packages = $this->getNoPgModulePackages();
+
+        $this->io
+            ->expects(self::never())
+            ->method('write');
+        $return = $this->plugin->findModulesPackages($packages);
+        $this->assertSame([], $return);
+    }
+
+    protected function getNoPgModulePackages(): array
     {
         $plugin1 = new Package('pg-framework/router', '1.0', '1.0');
         $plugin1->setType('library');
@@ -229,29 +274,11 @@ php;
             ],
         ]);
 
-        $packages = [
+        return [
             $plugin1,
             new Package('SomethingElse', '1.0', '1.0'),
             $plugin2,
         ];
-
-        $return = $this->plugin->findModulesPackages($packages);
-        $this->assertSame([], $return);
-        $this->io
-            ->expects(self::never())
-            ->method('write');
-    }
-
-    public function testPostAutoloadDumpAbortEarlyWithModulesPackagesEmpty()
-    {
-        $this->mockPlugin->postAutoloadDump(new Event('post-autoload-dump', $this->composer, $this->io));
-        $this->io
-            ->expects(self::never())
-            ->method('write')
-            ->with('<info>pg-modules packages not found, abort</info>');
-        $this->mockPlugin
-            ->expects(self::never())
-            ->method('findModulesClass');
     }
 
     public function testFindModulesClass()
@@ -306,6 +333,7 @@ PHP;
         $content = sprintf($content, $authNs, $authClass);
         $this->createModuleClass('vendor/pgframework/auth/src/Auth/AuthModule.php', $content);
         $this->assertFileExists($this->path . '/vendor/pgframework/auth/src/Auth/AuthModule.php');
+        $this->assertFileExists($this->path . '/vendor/pgframework/auth/src/config.php');
         $plugin2 = new Package('pgframework/auth', '1.0', '1.0');
         $plugin2->setType('pg-module');
         $plugin2->setAutoload([

@@ -123,6 +123,17 @@ class ModuleInstaller implements
         return $modulesPackages;
     }
 
+    public function getConfigFile(string $projectDir): string
+    {
+        return $projectDir .
+            DIRECTORY_SEPARATOR .
+            'src' .
+            DIRECTORY_SEPARATOR .
+            'Bootstrap' .
+            DIRECTORY_SEPARATOR .
+            'PgFramework.php';
+    }
+
     /**
      * @param BasePackage[] $packages
      * @return array
@@ -230,17 +241,6 @@ class ModuleInstaller implements
             }
         }
         return $this->modules;
-    }
-
-    public function getConfigFile(string $projectDir): string
-    {
-        return $projectDir .
-            DIRECTORY_SEPARATOR .
-            'src' .
-            DIRECTORY_SEPARATOR .
-            'Bootstrap' .
-            DIRECTORY_SEPARATOR .
-            'PgFramework.php';
     }
 
     public function writeConfigFile(string $configFile): bool
