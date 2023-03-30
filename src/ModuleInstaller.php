@@ -248,12 +248,13 @@ class ModuleInstaller implements
         if (!is_file($configFile)) {
             $this->io->write(
                 sprintf(
-                    '<info>Config file %s don\'t exists in this système, abort</info>',
+                    "<info>Config file\n %s \n don't exist in this project, writing dummy file</info>",
                     $configFile
                 )
             );
-            return false;
+            $this->writeFile($configFile, '', '');
         }
+
         $content = file_get_contents($configFile);
         $regex = '/declare\S+\s*;\s+([use\S\s]*)\s+return\s+\[\s+\'modules\'\s+=>\s+\[\s+([\S\s]+)\s+]\s+/';
         if (preg_match($regex, $content, $m)) {
@@ -308,6 +309,7 @@ class ModuleInstaller implements
 declare(strict_types=1);
 
 %s
+
 return [
     'modules' => [
 %s

@@ -4,25 +4,21 @@ declare(strict_types=1);
 
 namespace ComposerInstaller;
 
-use CallbackFilterIterator;
 use Composer\Composer;
 use Composer\Config;
 use Composer\Installer\InstallationManager;
 use Composer\IO\IOInterface;
 use Composer\Package\BasePackage;
 use Composer\Package\Package;
+use Composer\Repository\InstalledRepository;
 use Composer\Repository\RepositoryManager;
+use Composer\Script\Event;
 use Composer\Util\HttpDownloader;
-use FilesystemIterator;
 use org\bovigo\vfs\vfsStream;
 use org\bovigo\vfs\vfsStreamDirectory;
-use org\bovigo\vfs\visitor\vfsStreamStructureVisitor;
 use PgFramework\ComposerInstaller\ModuleInstaller;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
-use RecursiveDirectoryIterator;
-use RecursiveIteratorIterator;
-use SplFileInfo;
 
 class ModuleInstallerTest extends TestCase
 {
@@ -52,21 +48,6 @@ class ModuleInstallerTest extends TestCase
      */
     protected vfsStreamDirectory $projectRoot;
 
-    /**
-     * Directories used during tests
-     *
-     * @var array
-     */
-    protected array $testDirs = [
-        '',
-        'vendor',
-        'src',
-        'src/Bootstrap',
-        'src/Home',
-        'src/Foe',
-        'src/Fum',
-    ];
-
     protected array $structure = [
         'src' => [
             'Bootstrap' => [
@@ -82,6 +63,7 @@ class ModuleInstallerTest extends TestCase
                 ],
                 'auth' => [
                     'src' => [
+                        'config.php' => "<?php\nreturn [\n];",
                         'Auth' => [
                             'AuthModule.php' => 'AuthModule.php'
                         ]
@@ -260,13 +242,25 @@ php;
             ->method('write');
     }
 
+    public function testPostAutoloadDumpAbortEarlyWithModulesPackagesEmpty()
+    {
+        $this->mockPlugin->postAutoloadDump(new Event('post-autoload-dump', $this->composer, $this->io));
+        $this->io
+            ->expects(self::never())
+            ->method('write')
+            ->with('<info>pg-modules packages not found, abort</info>');
+        $this->mockPlugin
+            ->expects(self::never())
+            ->method('findModulesClass');
+    }
+
     public function testFindModulesClass()
     {
-        $expect = [];
+        $expected = [];
 
         $routerNs = 'Router';
         $routerClass = 'RouterModule';
-        $expect[$routerNs] = [$routerNs . '\\' . $routerClass => $routerClass];
+        $expected[$routerNs] = [$routerNs . '\\' . $routerClass => $routerClass];
         $content = <<<PHP
 <?php
 
@@ -294,7 +288,7 @@ PHP;
 
         $authNs = 'Auth/Auth';
         $authClass = 'AuthModule';
-        $expect[$authNs] = [$authNs . '\\' . $authClass => $authClass];
+        $expected[$authNs] = [$authNs . '\\' . $authClass => $authClass];
         $content = <<<PHP
 <?php
 
@@ -322,7 +316,7 @@ PHP;
 
         $fakeNs = 'FakeModule';
         $fakeClass = 'FakeModule';
-        $expect[$fakeNs] = [$fakeNs . '\\' . $fakeClass => $fakeClass];
+        $expected[$fakeNs] = [$fakeNs . '\\' . $fakeClass => $fakeClass];
         $content = <<<PHP
 <?php
 
@@ -365,8 +359,11 @@ PHP;
                 }
             );
 
+        $this->io
+            ->expects(self::exactly(3))
+            ->method('write');
         $modules = $this->plugin->findModulesClass($packages);
-        $this->assertSame($expect, $modules);
+        $this->assertSame($expected, $modules);
     }
 
 }
