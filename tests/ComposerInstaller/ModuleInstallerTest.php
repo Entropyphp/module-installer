@@ -284,10 +284,6 @@ php;
     public function testFindModulesClass()
     {
         $expected = [];
-
-        $routerNs = 'Router';
-        $routerClass = 'RouterModule';
-        $expected[$routerNs] = [$routerNs . '\\' . $routerClass => $routerClass];
         $content = <<<PHP
 <?php
 
@@ -302,8 +298,14 @@ class %s extends Module
 }
 
 PHP;
-        $content = sprintf($content, $routerNs, $routerClass);
-        $this->createModuleClass('vendor/pgframework/router/src/RouterModule.php', $content);
+
+        $routerNs = 'Router';
+        $routerClass = 'RouterModule';
+        $expected[$routerNs] = [$routerNs . '\\' . $routerClass => $routerClass];
+        $this->createModuleClass(
+            'vendor/pgframework/router/src/RouterModule.php',
+            sprintf($content, $routerNs, $routerClass)
+        );
         $this->assertFileExists($this->path . '/vendor/pgframework/router/src/RouterModule.php');
         $plugin1 = new Package('pgframework/router', '1.0', '1.0');
         $plugin1->setType('pg-module');
@@ -316,22 +318,10 @@ PHP;
         $authNs = 'Auth/Auth';
         $authClass = 'AuthModule';
         $expected[$authNs] = [$authNs . '\\' . $authClass => $authClass];
-        $content = <<<PHP
-<?php
-
-declare(strict_types=1);
-
-namespace %s;
-
-use PgFramework\Module;
-
-class %s extends Module
-{
-}
-
-PHP;
-        $content = sprintf($content, $authNs, $authClass);
-        $this->createModuleClass('vendor/pgframework/auth/src/Auth/AuthModule.php', $content);
+        $this->createModuleClass(
+            'vendor/pgframework/auth/src/Auth/AuthModule.php',
+            sprintf($content, $authNs, $authClass)
+        );
         $this->assertFileExists($this->path . '/vendor/pgframework/auth/src/Auth/AuthModule.php');
         $this->assertFileExists($this->path . '/vendor/pgframework/auth/src/config.php');
         $plugin2 = new Package('pgframework/auth', '1.0', '1.0');
@@ -345,22 +335,10 @@ PHP;
         $fakeNs = 'FakeModule';
         $fakeClass = 'FakeModule';
         $expected[$fakeNs] = [$fakeNs . '\\' . $fakeClass => $fakeClass];
-        $content = <<<PHP
-<?php
-
-declare(strict_types=1);
-
-namespace %s;
-
-use PgFramework\Module;
-
-class %s extends Module
-{
-}
-
-PHP;
-        $content = sprintf($content, $fakeNs, $fakeClass);
-        $this->createModuleClass('vendor/pgframework/fake-module/src/FakeModule.php', $content);
+        $this->createModuleClass(
+            'vendor/pgframework/fake-module/src/FakeModule.php',
+            sprintf($content, $fakeNs, $fakeClass)
+        );
         $this->assertFileExists($this->path . '/vendor/pgframework/fake-module/src/FakeModule.php');
         $plugin3 = new Package('pgframework/fake-module', '1.0', '1.0');
         $plugin3->setType('pg-module');
