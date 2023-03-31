@@ -153,14 +153,7 @@ class ModuleInstallerTest extends TestCase
         $this->plugin->activate($this->composer, $this->io);
     }
 
-    protected function createModulesConfig(string $path, string $content): string
-    {
-        $path = $this->path . '/' . $path;
-        file_put_contents($path, $content);
-        return $path;
-    }
-
-    protected function createModuleClass(string $path, string $content): string
+    protected function createPhpFile(string $path, string $content): string
     {
         $path = $this->path . '/' . $path;
         file_put_contents($path, $content);
@@ -191,7 +184,7 @@ return [
 ];
 
 php;
-        $this->createModulesConfig('src/Bootstrap/PgFramework.php', $content);
+        $this->createPhpFile('src/Bootstrap/PgFramework.php', $content);
         $path = $this->plugin->getConfigFile($this->path);
         $this->assertFileExists($path);
     }
@@ -302,7 +295,7 @@ PHP;
         $routerNs = 'Router';
         $routerClass = 'RouterModule';
         $expected[$routerNs] = [$routerNs . '\\' . $routerClass => $routerClass];
-        $this->createModuleClass(
+        $this->createPhpFile(
             'vendor/pgframework/router/src/RouterModule.php',
             sprintf($content, $routerNs, $routerClass)
         );
@@ -318,7 +311,7 @@ PHP;
         $authNs = 'Auth/Auth';
         $authClass = 'AuthModule';
         $expected[$authNs] = [$authNs . '\\' . $authClass => $authClass];
-        $this->createModuleClass(
+        $this->createPhpFile(
             'vendor/pgframework/auth/src/Auth/AuthModule.php',
             sprintf($content, $authNs, $authClass)
         );
@@ -335,7 +328,7 @@ PHP;
         $fakeNs = 'FakeModule';
         $fakeClass = 'FakeModule';
         $expected[$fakeNs] = [$fakeNs . '\\' . $fakeClass => $fakeClass];
-        $this->createModuleClass(
+        $this->createPhpFile(
             'vendor/pgframework/fake-module/src/FakeModule.php',
             sprintf($content, $fakeNs, $fakeClass)
         );
