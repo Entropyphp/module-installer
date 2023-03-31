@@ -153,6 +153,22 @@ class ModuleInstallerTest extends TestCase
         // LOCK_EX not working with vfsStream
         $this->plugin->setWriteLockEx(0);
         $this->plugin->activate($this->composer, $this->io);
+
+        // Init config file
+        $content = <<<php
+<?php
+
+/** This file is auto generated, do not edit */
+
+declare(strict_types=1);
+
+return [
+    'modules' => [
+    ]
+];
+
+php;
+        $this->createPhpFile('src/Bootstrap/PgFramework.php', $content);
     }
 
     protected function createPhpFile(string $path, string $content): string
@@ -173,20 +189,6 @@ class ModuleInstallerTest extends TestCase
 
     public function testGetConfigFilePath()
     {
-        $content = <<<php
-<?php
-
-/** This file is auto generated, do not edit */
-
-declare(strict_types=1);
-
-return [
-    'modules' => [
-    ]
-];
-
-php;
-        $this->createPhpFile('src/Bootstrap/PgFramework.php', $content);
         $path = $this->plugin->getConfigFile($this->path);
         $this->assertFileExists($path);
     }
