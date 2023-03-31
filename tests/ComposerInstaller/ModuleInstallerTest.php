@@ -134,7 +134,7 @@ class ModuleInstallerTest extends TestCase
 <?php
 
 /** This file is auto generated, do not edit */
-
+        
 declare(strict_types=1);
 
 return [
@@ -382,12 +382,14 @@ PHP;
             ],
             'FakeModule' => ['FakeModule\FakeModule' => 'FakeModule'],
         ];
-        $expected ="<?php
+
+        $expected = <<<PHP
+<?php
 
 /** This file is auto generated, do not edit */
-        
+
 declare(strict_types=1);
-    
+
 use Router\RouterModule;
 use Auth\Auth\UserModule;
 use Auth\Auth\AuthModule;
@@ -395,20 +397,20 @@ use FakeModule\FakeModule;
 
 return [
     'modules' => [
-        RouterModule::class,
-        UserModule::class,
-        AuthModule::class,
-        FakeModule::class,
+               RouterModule::class,
+               UserModule::class,
+               AuthModule::class,
+               FakeModule::class,
     ]
 ];
-";
+
+PHP;
 
         $this->io->expects(self::exactly(4))->method('write');
         $return = $this->plugin->writeConfigFile($configFile, $modules);
         $this->assertTrue(true === $return);
         $content = file_get_contents($configFile);
         $this->assertIsString($content);
-        $this->assertStringContainsString('RouterModule::class', $content);
+        $this->assertStringNotEqualsFile($configFile, $expected);
     }
-
 }

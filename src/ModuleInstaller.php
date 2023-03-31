@@ -278,7 +278,7 @@ class ModuleInstaller implements
                 $useStr = "";
             }
             $useStr = trim($useStr);
-            $useStr = $useStr . "\n";
+            $useStr .= "\n";
             $modulesStr = $m[2];
             foreach ($modules as $classModules) {
                 foreach ($classModules as $useStatement => $classModule) {
