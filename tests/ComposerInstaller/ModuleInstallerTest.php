@@ -397,10 +397,10 @@ use FakeModule\FakeModule;
 
 return [
     'modules' => [
-               RouterModule::class,
-               UserModule::class,
-               AuthModule::class,
-               FakeModule::class,
+                RouterModule::class,
+                UserModule::class,
+                AuthModule::class,
+                FakeModule::class,
     ]
 ];
 
@@ -410,7 +410,8 @@ PHP;
         $return = $this->plugin->writeConfigFile($configFile, $modules);
         $this->assertTrue(true === $return);
         $content = file_get_contents($configFile);
+        print_r($content);
         $this->assertIsString($content);
-        $this->assertStringNotEqualsFile($configFile, $expected);
+        $this->assertStringContainsString($expected, $content);
     }
 }
