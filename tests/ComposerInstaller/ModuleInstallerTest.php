@@ -150,6 +150,8 @@ class ModuleInstallerTest extends TestCase
         $this->composer->setInstallationManager($installationManager);
 
         $this->plugin = new ModuleInstaller();
+        // LOCK_EX not working with vfsStream
+        $this->plugin->setWriteLockEx(0);
         $this->plugin->activate($this->composer, $this->io);
     }
 

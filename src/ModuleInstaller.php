@@ -24,6 +24,15 @@ class ModuleInstaller implements
     private Composer $composer;
     private IOInterface $io;
     private array $modules = [];
+    private int $writeLockEx = LOCK_EX;
+
+    /**
+     * @param int $writeLockEx
+     */
+    public function setWriteLockEx(int $writeLockEx = 0): void
+    {
+        $this->writeLockEx = $writeLockEx;
+    }
 
     /**
      * Called whenever composer (re)generates the autoloader.
@@ -317,6 +326,6 @@ return [
 ];
 
 php;
-        return file_put_contents($configFile, sprintf($content, $useStr, $modulesStr), LOCK_EX);
+        return file_put_contents($configFile, sprintf($content, $useStr, $modulesStr), $this->writeLockEx);
     }
 }
