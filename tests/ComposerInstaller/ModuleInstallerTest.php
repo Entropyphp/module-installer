@@ -10,10 +10,9 @@ use Composer\Installer\InstallationManager;
 use Composer\IO\IOInterface;
 use Composer\Package\BasePackage;
 use Composer\Package\Package;
-use Composer\Repository\InstalledFilesystemRepository;
+use Composer\Repository\InstalledRepositoryInterface;
 use Composer\Repository\RepositoryManager;
 use Composer\Script\Event;
-use Composer\Util\HttpDownloader;
 use org\bovigo\vfs\vfsStream;
 use org\bovigo\vfs\vfsStreamDirectory;
 use PgFramework\ComposerInstaller\ModuleInstaller;
@@ -89,70 +88,46 @@ class ModuleInstallerTest extends TestCase
     {
         parent::setUp();
 
-        $this->package = new Package('pg-framework/RouterModule', '1.0', '1.0');
-        $this->package->setType('pg-module');
-
         $this->projectRoot = vfsStream::setup('project', 0777, $this->structure);
         $this->path = vfsStream::url('project');
 
-        $this->composer = new Composer();
-        $config = new Config();
-        $config->merge(['vendor-dir' => $this->path . '/vendor']);
+        /** @var IOInterface&MockObject $io */
+        $io = $this->createMock(IOInterface::class);
+        $this->io = $io;
 
-        $this->composer->setConfig($config);
-
-        $mockComposer = $this->getMockBuilder(Composer::class)
-            ->disableOriginalConstructor()
-            ->getMock();
+        $mockComposer = $this->createMock(Composer::class);
         $this->mockComposer = $mockComposer;
 
-        $mockConfig = $this->getMockBuilder(Config::class)->getMock();
+        $mockConfig = $this->createMock(Config::class);
         $this->mockConfig = $mockConfig;
         $this->mockConfig
             ->method('get')
             ->with('vendor-dir')
-            ->willReturn(['vendor-dir' => $this->path . '/vendor']);
-        $this->mockComposer
-            ->method('getConfig')
-            ->willReturn($this->mockConfig);
+            ->willReturn($this->path . '/vendor');
+        $this->mockComposer->method('getConfig')->willReturn($this->mockConfig);
 
-        /** @var IOInterface&MockObject $io */
-        $io = $this->getMockBuilder(IOInterface::class)->getMock();
-        $this->io = $io;
-
-        $httpDownloader = new HttpDownloader($this->io, $config);
-
-        $rm = new RepositoryManager(
-            $this->io,
-            $config,
-            $httpDownloader
-        );
-        $this->composer->setRepositoryManager($rm);
-        $mockRepositoryManager = $this->getMockBuilder(RepositoryManager::class)
-            ->disableOriginalConstructor()
-            ->getMock();
+        $mockRepositoryManager = $this->createMock(RepositoryManager::class);
         $this->mockRepositoryManager = $mockRepositoryManager;
+        $this->mockComposer->method('getRepositoryManager')->willReturn($this->mockRepositoryManager);
 
-        $mockInstalledRepository = $this->getMockBuilder(InstalledFilesystemRepository::class)
-            ->disableOriginalConstructor()
-            ->getMock();
+        $mockInstalledRepository = $this->createMock(InstalledRepositoryInterface::class);
         $this->mockInstalledRepository = $mockInstalledRepository;
-        $rm->setLocalRepository($mockInstalledRepository);
+        $this->mockRepositoryManager
+            ->method('getLocalRepository')
+            ->willReturn($this->mockInstalledRepository);
+        //$rm->setLocalRepository($mockInstalledRepository);
 
         $mockPlugin = $this->getMockBuilder(ModuleInstaller::class)->getMock();
         $this->mockPlugin = $mockPlugin;
 
-        $installationManager = $this->getMockBuilder(InstallationManager::class)
-            ->disableOriginalConstructor()
-            ->getMock();
+        $installationManager = $this->createMock(InstallationManager::class);
         $this->installationManager = $installationManager;
-
-        $this->composer->setInstallationManager($installationManager);
+        $this->mockComposer->method('getInstallationManager')->willReturn($this->installationManager);
 
         $this->plugin = new ModuleInstaller();
         // LOCK_EX not working with vfsStream
         $this->plugin->setWriteLockEx(0);
-        $this->plugin->activate($this->composer, $this->io);
+        $this->plugin->activate($this->mockComposer, $this->io);
 
         // Init config file
         $content = <<<php
@@ -233,22 +208,20 @@ php;
     public function testPluginAbortEarlyWithModulesPackagesEmpty()
     {
         $packages = $this->getNoPgModulePackages();
+        $event = $this->createMock(Event::class);
         $this->mockInstalledRepository
             ->method('getPackages')
             ->willReturn($packages);
         $this->io
             ->expects(self::exactly(2))
             ->method('write');
-        $this->plugin->postAutoloadDump(new Event('post-autoload-dump', $this->composer, $this->io));
+        $this->plugin->postAutoloadDump($event);
     }
 
     public function testFindModulesPackagesEmpty()
     {
         $packages = $this->getNoPgModulePackages();
-
-        $this->io
-            ->expects(self::never())
-            ->method('write');
+        $this->io->expects(self::never())->method('write');
         $return = $this->plugin->findModulesPackages($packages);
         $this->assertSame([], $return);
     }
@@ -278,10 +251,9 @@ php;
         ];
     }
 
-    public function testFindModulesClass()
+    protected function getModuleClassTemplate(): string
     {
-        $expected = [];
-        $content = <<<PHP
+        return <<<PHP
 <?php
 
 declare(strict_types=1);
@@ -295,6 +267,12 @@ class %s extends Module
 }
 
 PHP;
+    }
+
+    public function testFindModulesClass()
+    {
+        $expected = [];
+        $content = $this->getModuleClassTemplate();
 
         $routerNs = 'Router';
         $routerClass = 'RouterModule';
@@ -312,7 +290,7 @@ PHP;
             ],
         ]);
 
-        $authNs = 'Auth/Auth';
+        $authNs = 'Auth\Auth';
         $authClass = 'AuthModule';
         $expected[$authNs] = [$authNs . '\\' . $authClass => $authClass];
         $this->createPhpFile(
@@ -362,11 +340,75 @@ PHP;
                 }
             );
 
-        $this->io
-            ->expects(self::exactly(3))
-            ->method('write');
+        $this->io->expects(self::exactly(count($packages)))->method('write');
         $modules = $this->plugin->findModulesClass($packages);
         $this->assertSame($expected, $modules);
+    }
+
+    public function testGetModuleClass()
+    {
+        $content = $this->getModuleClassTemplate();
+        $this->createPhpFile(
+            'vendor/pgframework/auth/src/Auth/AuthModule.php',
+            sprintf($content, 'Auth\\Auth', 'AuthModule')
+        );
+        $this->createPhpFile(
+            'vendor/pgframework/fake-module/src/FakeModule.php',
+            sprintf($content, 'FakeModule', 'FakeModule')
+        );
+        $files = [
+            $this->path . '/vendor/pgframework/auth/src/Auth/AuthModule.php',
+            $this->path . '/vendor/pgframework/auth/src/config.php',
+            $this->path . '/vendor/pgframework/fake-module/src/FakeModule.php'
+        ];
+
+        $this->io->expects(self::exactly(2))->method('write');
+        $modules = $this->plugin->getModulesClass($files);
+        $this->assertCount(2, $modules);
+        $this->assertArrayHasKey('Auth\Auth', $modules);
+        $this->assertArrayHasKey('FakeModule', $modules);
+        $this->assertContains('AuthModule', $modules['Auth\Auth']);
+        $this->assertContains('FakeModule', $modules['FakeModule']);
+    }
+
+    public function testWriteConfigFile()
+    {
+        $configFile = $this->path . '/src/Bootstrap/PgFramework.php';
+        $modules = [
+            'Router' => ['Router\RouterModule' => 'RouterModule'],
+            'Auth\Auth' => [
+                'Auth\Auth\UserModule' => 'UserModule',
+                'Auth\Auth\AuthModule' => 'AuthModule'
+            ],
+            'FakeModule' => ['FakeModule\FakeModule' => 'FakeModule'],
+        ];
+        $expected ="<?php
+
+/** This file is auto generated, do not edit */
+        
+declare(strict_types=1);
+    
+use Router\RouterModule;
+use Auth\Auth\UserModule;
+use Auth\Auth\AuthModule;
+use FakeModule\FakeModule;
+
+return [
+    'modules' => [
+        RouterModule::class,
+        UserModule::class,
+        AuthModule::class,
+        FakeModule::class,
+    ]
+];
+";
+
+        $this->io->expects(self::exactly(4))->method('write');
+        $return = $this->plugin->writeConfigFile($configFile, $modules);
+        $this->assertTrue(true === $return);
+        $content = file_get_contents($configFile);
+        $this->assertIsString($content);
+        $this->assertStringContainsString('RouterModule::class', $content);
     }
 
 }

@@ -109,10 +109,14 @@ class ModuleInstaller implements
             $this->io->write('<info>pg-modules packages not found, abort</info>');
             return;
         }
-        $this->findModulesClass($packages);
+        $modules = $this->findModulesClass($packages);
+        if (empty($modules)) {
+            $this->io->write('<info>pg-modules not found in packages, abort</info>');
+            return;
+        }
 
         $configFile = $this->getConfigFile($projectDir);
-        $this->writeConfigFile($configFile);
+        $this->writeConfigFile($configFile, $modules);
     }
 
     public function findModulesPackages(array $packages): array
@@ -228,6 +232,7 @@ class ModuleInstaller implements
 
     public function getModulesClass(array $files): array
     {
+        $modules = [];
         /** @var SplFileInfo $file */
         foreach ($files as $file) {
             $content = file_get_contents((string)$file);
@@ -252,7 +257,7 @@ class ModuleInstaller implements
         return $this->modules;
     }
 
-    public function writeConfigFile(string $configFile): bool
+    public function writeConfigFile(string $configFile, array $modules): bool
     {
         if (!is_file($configFile)) {
             $this->io->write(
@@ -275,7 +280,7 @@ class ModuleInstaller implements
             $useStr = trim($useStr);
             $useStr = $useStr . "\n";
             $modulesStr = $m[2];
-            foreach ($this->modules as $classModules) {
+            foreach ($modules as $classModules) {
                 foreach ($classModules as $useStatement => $classModule) {
                     if (str_contains($modulesStr, $classModule . '::class')) {
                         $this->io->write(
