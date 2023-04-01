@@ -480,7 +480,23 @@ PHP;
         $this->createPhpFile('src/Bootstrap/PgFramework.php', $expected);
         $this->io
             ->expects(self::exactly(4))
-            ->method('write');
+            ->method('write')
+            ->with(
+                self::callback(
+                    function ($arg) {
+                        $messages = [
+                            "<info>Module RouterModule already exist in config file</info>",
+                            "<info>Module UserModule already exist in config file</info>",
+                            "<info>Write module AuthModule in config file</info>",
+                            "<info>Write module FakeModule in config file</info>",
+                        ];
+                        if (is_string($arg) && in_array($arg, $messages)) {
+                            return true;
+                        }
+                        return false;
+                    }
+                )
+            );
         $return = $this->plugin->writeConfigFile($configFile, $modules);
         $this->assertTrue(true === $return);
         $content = file_get_contents($configFile);
