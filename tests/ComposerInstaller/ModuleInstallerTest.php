@@ -222,6 +222,57 @@ php;
         $this->plugin->postAutoloadDump($event);
     }
 
+    protected function getGoodPackages(): array
+    {
+        $plugin1 = new Package('pg-framework/router', '1.0', '1.0');
+        $plugin1->setType('pg-module');
+        $plugin1->setAutoload([
+            'psr-4' => [
+                'Router' => 'src/',
+            ],
+        ]);
+
+        $plugin2 = new Package('pg-framework/auth', '1.0', '1.0');
+        $plugin2->setType('pg-module');
+        $plugin2->setAutoload([
+            'psr-4' => [
+                'Auth' => 'src/',
+            ],
+        ]);
+
+        return [
+            $plugin1,
+            new Package('SomethingElse', '1.0', '1.0'),
+            $plugin2,
+        ];
+    }
+
+    /**
+     * @throws Exception
+     */
+    public function testPluginAbortEarlyWithModulesEmpty()
+    {
+        $packages = $this->getGoodPackages();
+        $this->installationManager
+            ->method('getInstallPath')
+            ->willReturnCallback(
+                function (BasePackage $package) {
+                    return $this->path .
+                        '/src/' .
+                        $package->getPrettyName() .
+                        $package->getTargetDir();
+                }
+            );
+        $event = $this->createMock(Event::class);
+        $this->mockInstalledRepository
+            ->method('getPackages')
+            ->willReturn($packages);
+        $this->io
+            ->expects(self::exactly(4))
+            ->method('write');
+        $this->plugin->postAutoloadDump($event);
+    }
+
     public function testFindModulesPackagesEmpty()
     {
         $packages = $this->getNoPgModulePackages();

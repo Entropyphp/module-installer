@@ -203,7 +203,9 @@ class ModuleInstaller implements
     {
         $files = [];
         foreach ($result as $dir) {
-            $files = $this->getFiles($dir);
+            if (is_dir($dir)){
+                $files = $this->getFiles($dir);
+            }
         }
         return $files;
     }
