@@ -385,28 +385,7 @@ PHP;
             'FakeModule\FakeModule' => 'FakeModule',
         ];
 
-        $expected = <<<PHP
-<?php
-
-/** This file is auto generated, do not edit */
-
-declare(strict_types=1);
-
-use Router\RouterModule;
-use Auth\Auth\UserModule;
-use Auth\Auth\AuthModule;
-use FakeModule\FakeModule;
-
-return [
-    'modules' => [
-               RouterModule::class,
-               UserModule::class,
-               AuthModule::class,
-               FakeModule::class,
-    ]
-];
-
-PHP;
+        $expected = $this->getFullContentConfigFile();
 
         $this->io->expects(self::exactly(4))->method('write');
         $return = $this->plugin->writeConfigFile($configFile, $modules);
@@ -419,7 +398,7 @@ PHP;
         );
     }
 
-    public function testWriteConfigFileDoNothing()
+    public function testWriteConfigFileSkipModuleExists()
     {
         $configFile = $this->path . '/src/Bootstrap/PgFramework.php';
         $modules = [
@@ -438,6 +417,59 @@ declare(strict_types=1);
 
 use Router\RouterModule;
 use Auth\Auth\UserModule;
+
+return [
+    'modules' => [
+               RouterModule::class,
+               UserModule::class,
+    ]
+];
+
+PHP;
+        $this->createPhpFile('src/Bootstrap/PgFramework.php', $expected);
+        $this->io
+            ->expects(self::exactly(4))
+            ->method('write');
+        $return = $this->plugin->writeConfigFile($configFile, $modules);
+        $this->assertTrue(true === $return);
+        $content = file_get_contents($configFile);
+        $this->assertIsString($content);
+        $this->assertStringContainsString(
+            str_replace(["\t", "\n", ' '], '', $this->getFullContentConfigFile()),
+            str_replace(["\t", "\n", ' '], '', $content)
+        );
+    }
+
+    public function testWriteConfigFileDoNothing()
+    {
+        $configFile = $this->path . '/src/Bootstrap/PgFramework.php';
+        $modules = [
+            'Router\RouterModule' => 'RouterModule',
+            'Auth\Auth\UserModule' => 'UserModule',
+            'Auth\Auth\AuthModule' => 'AuthModule',
+            'FakeModule\FakeModule' => 'FakeModule',
+        ];
+
+        $expected = $this->getFullContentConfigFile();
+        $this->createPhpFile('src/Bootstrap/PgFramework.php', $expected);
+        $this->io
+            ->expects(self::exactly(5))
+            ->method('write');
+        $return = $this->plugin->writeConfigFile($configFile, $modules);
+        $this->assertTrue(false === $return);
+    }
+
+    protected function getFullContentConfigFile(): string
+    {
+        return <<<PHP
+<?php
+
+/** This file is auto generated, do not edit */
+
+declare(strict_types=1);
+
+use Router\RouterModule;
+use Auth\Auth\UserModule;
 use Auth\Auth\AuthModule;
 use FakeModule\FakeModule;
 
@@ -451,11 +483,5 @@ return [
 ];
 
 PHP;
-        $this->createPhpFile('src/Bootstrap/PgFramework.php', $expected);
-        $this->io
-            ->expects(self::exactly(5))
-            ->method('write');
-        $return = $this->plugin->writeConfigFile($configFile, $modules);
-        $this->assertTrue(false === $return);
     }
 }
