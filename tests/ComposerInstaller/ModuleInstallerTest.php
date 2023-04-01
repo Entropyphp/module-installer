@@ -459,6 +459,33 @@ PHP;
         $this->assertTrue(false === $return);
     }
 
+    public function testWriteConfigFileWithoutConfigFile()
+    {
+        unlink($this->path . '/src/Bootstrap/PgFramework.php');
+        $this->assertFileDoesNotExist($this->path . '/src/Bootstrap/PgFramework.php');
+
+        $configFile = $this->path . '/src/Bootstrap/PgFramework.php';
+        $modules = [
+            'Router\RouterModule' => 'RouterModule',
+            'Auth\Auth\UserModule' => 'UserModule',
+            'Auth\Auth\AuthModule' => 'AuthModule',
+            'FakeModule\FakeModule' => 'FakeModule',
+        ];
+
+        $expected = $this->getFullContentConfigFile();
+
+        $this->io->expects(self::exactly(5))->method('write');
+        $return = $this->plugin->writeConfigFile($configFile, $modules);
+        $this->assertFileExists($this->path . '/src/Bootstrap/PgFramework.php');
+        $this->assertTrue(true === $return);
+        $content = file_get_contents($configFile);
+        $this->assertIsString($content);
+        $this->assertStringContainsString(
+            str_replace(["\t", "\n", ' '], '', $expected),
+            str_replace(["\t", "\n", ' '], '', $content)
+        );
+    }
+
     protected function getFullContentConfigFile(): string
     {
         return <<<PHP
