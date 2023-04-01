@@ -40,7 +40,7 @@ class ModuleInstaller implements
      * Recreates PgFramework Module path map, based on composer information
      * and available app plugins.
      *
-     * @param  Event $event Composer's event object.
+     * @param Event $event Composer's event object.
      * @return void
      */
     public static function run(Event $event): void
@@ -93,7 +93,7 @@ class ModuleInstaller implements
      * Recreates PgFramework Module path map, based on composer information
      * and available app plugins.
      *
-     * @param  Event $event Composer's event object.
+     * @param Event $event Composer's event object.
      * @return void
      */
     public function postAutoloadDump(Event $event): void
@@ -245,7 +245,7 @@ class ModuleInstaller implements
             ) {
                 $namespace = $m[1];
                 $moduleName = $m[2];
-                $this->modules[$namespace][$namespace . '\\' . $moduleName] = $moduleName;
+                $this->modules[$namespace . '\\' . $moduleName] = $moduleName;
                 $this->io->write(
                     sprintf(
                         '<info>      Found pg-module: %s</info>',
@@ -280,28 +280,26 @@ class ModuleInstaller implements
             $useStr = trim($useStr);
             $useStr .= "\n";
             $modulesStr = $m[2];
-            foreach ($modules as $classModules) {
-                foreach ($classModules as $useStatement => $classModule) {
-                    if (str_contains($modulesStr, $classModule . '::class')) {
-                        $this->io->write(
-                            sprintf(
-                                '<info>Module %s already exist in config file</info>',
-                                $classModule
-                            )
-                        );
-                        continue;
-                    }
-                    $writeFile = true;
-                    $modulesStr .= "\t\t$classModule::class,\n";
-                    $useStr .= "use $useStatement;\n";
-
+            foreach ($modules as $useStatement => $classModule) {
+                if (str_contains($modulesStr, $classModule . '::class')) {
                     $this->io->write(
                         sprintf(
-                            '<info>Write module %s in config file</info>',
+                            '<info>Module %s already exist in config file</info>',
                             $classModule
                         )
                     );
+                    continue;
                 }
+                $writeFile = true;
+                $modulesStr .= "\t\t$classModule::class,\n";
+                $useStr .= "use $useStatement;\n";
+
+                $this->io->write(
+                    sprintf(
+                        '<info>Write module %s in config file</info>',
+                        $classModule
+                    )
+                );
             }
             if ($writeFile) {
                 $useStr = trim($useStr);

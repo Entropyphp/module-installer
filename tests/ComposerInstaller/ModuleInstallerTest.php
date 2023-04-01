@@ -16,6 +16,7 @@ use Composer\Script\Event;
 use org\bovigo\vfs\vfsStream;
 use org\bovigo\vfs\vfsStreamDirectory;
 use PgFramework\ComposerInstaller\ModuleInstaller;
+use PHPUnit\Framework\MockObject\Exception;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
@@ -83,6 +84,7 @@ class ModuleInstallerTest extends TestCase
      * setUp
      *
      * @return void
+     * @throws Exception
      */
     public function setUp(): void
     {
@@ -115,7 +117,6 @@ class ModuleInstallerTest extends TestCase
         $this->mockRepositoryManager
             ->method('getLocalRepository')
             ->willReturn($this->mockInstalledRepository);
-        //$rm->setLocalRepository($mockInstalledRepository);
 
         $mockPlugin = $this->getMockBuilder(ModuleInstaller::class)->getMock();
         $this->mockPlugin = $mockPlugin;
@@ -205,6 +206,9 @@ php;
         $this->assertSame($expected, $return, 'Composer-loaded module should be listed');
     }
 
+    /**
+     * @throws Exception
+     */
     public function testPluginAbortEarlyWithModulesPackagesEmpty()
     {
         $packages = $this->getNoPgModulePackages();
@@ -276,7 +280,7 @@ PHP;
 
         $routerNs = 'Router';
         $routerClass = 'RouterModule';
-        $expected[$routerNs] = [$routerNs . '\\' . $routerClass => $routerClass];
+        $expected[$routerNs . '\\' . $routerClass] = $routerClass;
         $this->createPhpFile(
             'vendor/pgframework/router/src/RouterModule.php',
             sprintf($content, $routerNs, $routerClass)
@@ -292,7 +296,7 @@ PHP;
 
         $authNs = 'Auth\Auth';
         $authClass = 'AuthModule';
-        $expected[$authNs] = [$authNs . '\\' . $authClass => $authClass];
+        $expected[$authNs . '\\' . $authClass] = $authClass;
         $this->createPhpFile(
             'vendor/pgframework/auth/src/Auth/AuthModule.php',
             sprintf($content, $authNs, $authClass)
@@ -309,7 +313,7 @@ PHP;
 
         $fakeNs = 'FakeModule';
         $fakeClass = 'FakeModule';
-        $expected[$fakeNs] = [$fakeNs . '\\' . $fakeClass => $fakeClass];
+        $expected[$fakeNs . '\\' . $fakeClass] = $fakeClass;
         $this->createPhpFile(
             'vendor/pgframework/fake-module/src/FakeModule.php',
             sprintf($content, $fakeNs, $fakeClass)
@@ -365,22 +369,20 @@ PHP;
         $this->io->expects(self::exactly(2))->method('write');
         $modules = $this->plugin->getModulesClass($files);
         $this->assertCount(2, $modules);
-        $this->assertArrayHasKey('Auth\Auth', $modules);
-        $this->assertArrayHasKey('FakeModule', $modules);
-        $this->assertContains('AuthModule', $modules['Auth\Auth']);
-        $this->assertContains('FakeModule', $modules['FakeModule']);
+        $this->assertArrayHasKey('Auth\Auth\AuthModule', $modules);
+        $this->assertArrayHasKey('FakeModule\FakeModule', $modules);
+        $this->assertContains('AuthModule', $modules);
+        $this->assertContains('FakeModule', $modules);
     }
 
     public function testWriteConfigFile()
     {
         $configFile = $this->path . '/src/Bootstrap/PgFramework.php';
         $modules = [
-            'Router' => ['Router\RouterModule' => 'RouterModule'],
-            'Auth\Auth' => [
-                'Auth\Auth\UserModule' => 'UserModule',
-                'Auth\Auth\AuthModule' => 'AuthModule'
-            ],
-            'FakeModule' => ['FakeModule\FakeModule' => 'FakeModule'],
+            'Router\RouterModule' => 'RouterModule',
+            'Auth\Auth\UserModule' => 'UserModule',
+            'Auth\Auth\AuthModule' => 'AuthModule',
+            'FakeModule\FakeModule' => 'FakeModule',
         ];
 
         $expected = <<<PHP
@@ -421,12 +423,10 @@ PHP;
     {
         $configFile = $this->path . '/src/Bootstrap/PgFramework.php';
         $modules = [
-            'Router' => ['Router\RouterModule' => 'RouterModule'],
-            'Auth\Auth' => [
-                'Auth\Auth\UserModule' => 'UserModule',
-                'Auth\Auth\AuthModule' => 'AuthModule'
-            ],
-            'FakeModule' => ['FakeModule\FakeModule' => 'FakeModule'],
+            'Router\RouterModule' => 'RouterModule',
+            'Auth\Auth\UserModule' => 'UserModule',
+            'Auth\Auth\AuthModule' => 'AuthModule',
+            'FakeModule\FakeModule' => 'FakeModule',
         ];
 
         $expected = <<<PHP
