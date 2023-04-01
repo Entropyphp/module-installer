@@ -154,6 +154,16 @@ php;
         return $path;
     }
 
+    public static function getIoMessageCallback(array $messages): \Closure
+    {
+        return function ($arg) use ($messages) {
+            if (is_string($arg) && in_array($arg, $messages)) {
+                return true;
+            }
+            return false;
+        };
+    }
+
     public function testGetSubscribedEvents()
     {
         $expected = [
@@ -444,8 +454,8 @@ PHP;
         $content = file_get_contents($configFile);
         $this->assertIsString($content);
         $this->assertStringContainsString(
-            str_replace(["\t", "\n", ' '], '', $expected),
-            str_replace(["\t", "\n", ' '], '', $content)
+            str_replace(["\t", "\n", "\r", ' '], '', $expected),
+            str_replace(["\t", "\n", "\r", ' '], '', $content)
         );
     }
 
@@ -457,6 +467,13 @@ PHP;
             'Auth\Auth\UserModule' => 'UserModule',
             'Auth\Auth\AuthModule' => 'AuthModule',
             'FakeModule\FakeModule' => 'FakeModule',
+        ];
+
+        $messages = [
+            "<info>Module RouterModule already exist in config file</info>",
+            "<info>Module UserModule already exist in config file</info>",
+            "<info>Write module AuthModule in config file</info>",
+            "<info>Write module FakeModule in config file</info>",
         ];
 
         $expected = <<<PHP
@@ -482,28 +499,14 @@ PHP;
             ->expects(self::exactly(4))
             ->method('write')
             ->with(
-                self::callback(
-                    function ($arg) {
-                        $messages = [
-                            "<info>Module RouterModule already exist in config file</info>",
-                            "<info>Module UserModule already exist in config file</info>",
-                            "<info>Write module AuthModule in config file</info>",
-                            "<info>Write module FakeModule in config file</info>",
-                        ];
-                        if (is_string($arg) && in_array($arg, $messages)) {
-                            return true;
-                        }
-                        return false;
-                    }
-                )
-            );
+                self::callback(self::getIoMessageCallback($messages)));
         $return = $this->plugin->writeConfigFile($configFile, $modules);
         $this->assertTrue(true === $return);
         $content = file_get_contents($configFile);
         $this->assertIsString($content);
         $this->assertStringContainsString(
-            str_replace(["\t", "\n", ' '], '', $this->getFullContentConfigFile()),
-            str_replace(["\t", "\n", ' '], '', $content)
+            str_replace(["\t", "\n", "\r", ' '], '', $this->getFullContentConfigFile()),
+            str_replace(["\t", "\n", "\r", ' '], '', $content)
         );
     }
 
@@ -548,8 +551,8 @@ PHP;
         $content = file_get_contents($configFile);
         $this->assertIsString($content);
         $this->assertStringContainsString(
-            str_replace(["\t", "\n", ' '], '', $expected),
-            str_replace(["\t", "\n", ' '], '', $content)
+            str_replace(["\t", "\n", "\r", ' '], '', $expected),
+            str_replace(["\t", "\n", "\r", ' '], '', $content)
         );
     }
 
