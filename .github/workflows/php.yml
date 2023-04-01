@@ -23,9 +23,6 @@ jobs:
         coverage: none
         php-version: 8.1
 
-    - name: Composer install
-      uses: ramsey/composer-install@v2
-
     - name: Validate composer.json and composer.lock
       run: composer validate --strict
 
