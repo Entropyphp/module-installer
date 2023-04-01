@@ -415,7 +415,47 @@ PHP;
             str_replace(["\t", "\n", ' '], '', $expected),
             str_replace(["\t", "\n", ' '], '', $content)
         );
+    }
 
+    public function testWriteConfigFileDoNothing()
+    {
+        $configFile = $this->path . '/src/Bootstrap/PgFramework.php';
+        $modules = [
+            'Router' => ['Router\RouterModule' => 'RouterModule'],
+            'Auth\Auth' => [
+                'Auth\Auth\UserModule' => 'UserModule',
+                'Auth\Auth\AuthModule' => 'AuthModule'
+            ],
+            'FakeModule' => ['FakeModule\FakeModule' => 'FakeModule'],
+        ];
 
+        $expected = <<<PHP
+<?php
+
+/** This file is auto generated, do not edit */
+
+declare(strict_types=1);
+
+use Router\RouterModule;
+use Auth\Auth\UserModule;
+use Auth\Auth\AuthModule;
+use FakeModule\FakeModule;
+
+return [
+    'modules' => [
+               RouterModule::class,
+               UserModule::class,
+               AuthModule::class,
+               FakeModule::class,
+    ]
+];
+
+PHP;
+        $this->createPhpFile('src/Bootstrap/PgFramework.php', $expected);
+        $this->io
+            ->expects(self::exactly(5))
+            ->method('write');
+        $return = $this->plugin->writeConfigFile($configFile, $modules);
+        $this->assertTrue(false === $return);
     }
 }
