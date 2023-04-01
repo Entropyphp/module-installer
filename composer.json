@@ -32,6 +32,9 @@
   "extra": {
     "class": "PgFramework\\ComposerInstaller\\ModuleInstaller"
   },
+  "scripts": {
+    "test": "vendor/bin/phpunit"
+  },
   "config": {
     "sort-packages": true
   },
