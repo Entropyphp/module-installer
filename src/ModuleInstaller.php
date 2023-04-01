@@ -279,9 +279,9 @@ class ModuleInstaller implements
             if (!$useStr) {
                 $useStr = "";
             }
-            $useStr = trim($useStr);
-            $useStr .= "\n";
+            $useStr = trim($useStr) . "\n";
             $modulesStr = $m[2];
+            $modulesStr = trim($modulesStr) . "\n";
             foreach ($modules as $useStatement => $classModule) {
                 if (str_contains($modulesStr, $classModule . '::class')) {
                     $this->io->write(
