@@ -295,7 +295,8 @@ php;
         ];
         $this->io
             ->expects(self::exactly(4))
-            ->method('write');
+            ->method('write')
+            ->with(self::callback(self::getIoMessageCallback($messages)));
         $this->plugin->postAutoloadDump($event);
     }
 
@@ -421,7 +422,15 @@ PHP;
                 }
             );
 
-        $this->io->expects(self::exactly(count($packages)))->method('write');
+        $messages = [
+            "<info>      Found pg-module: $routerClass</info>",
+            "<info>      Found pg-module: $authClass</info>",
+            "<info>      Found pg-module: $fakeClass</info>",
+        ];
+        $this->io
+            ->expects(self::exactly(count($packages)))
+            ->method('write')
+            ->with(self::callback(self::getIoMessageCallback($messages)));
         $modules = $this->plugin->findModulesClass($packages);
         $this->assertSame($expected, $modules);
     }
@@ -443,7 +452,14 @@ PHP;
             $this->path . '/vendor/pgframework/fake-module/src/FakeModule.php'
         ];
 
-        $this->io->expects(self::exactly(2))->method('write');
+        $messages = [
+            "<info>      Found pg-module: AuthModule</info>",
+            "<info>      Found pg-module: FakeModule</info>",
+        ];
+        $this->io
+            ->expects(self::exactly(2))
+            ->method('write')
+            ->with(self::callback(self::getIoMessageCallback($messages)));
         $modules = $this->plugin->getModulesClass($files);
         $this->assertCount(2, $modules);
         $this->assertArrayHasKey('Auth\Auth\AuthModule', $modules);
@@ -464,7 +480,16 @@ PHP;
 
         $expected = $this->getFullContentConfigFile();
 
-        $this->io->expects(self::exactly(4))->method('write');
+        $messages = [
+            '<info>Write module RouterModule in config file</info>',
+            '<info>Write module UserModule in config file</info>',
+            '<info>Write module AuthModule in config file</info>',
+            '<info>Write module FakeModule in config file</info>',
+        ];
+        $this->io
+            ->expects(self::exactly(4))
+            ->method('write')
+            ->with(self::callback(self::getIoMessageCallback($messages)));
         $return = $this->plugin->writeConfigFile($configFile, $modules);
         $this->assertTrue(true === $return);
         $content = file_get_contents($configFile);
@@ -503,13 +528,13 @@ return [
 ];
 
 PHP;
+        $this->createPhpFile('src/Bootstrap/PgFramework.php', $expected);
         $messages = [
             "<info>Module RouterModule already exist in config file</info>",
             "<info>Module UserModule already exist in config file</info>",
             "<info>Write module AuthModule in config file</info>",
             "<info>Write module FakeModule in config file</info>",
         ];
-        $this->createPhpFile('src/Bootstrap/PgFramework.php', $expected);
         $this->io
             ->expects(self::exactly(4))
             ->method('write')
@@ -536,9 +561,17 @@ PHP;
 
         $expected = $this->getFullContentConfigFile();
         $this->createPhpFile('src/Bootstrap/PgFramework.php', $expected);
+        $messages = [
+            "<info>Module RouterModule already exist in config file</info>",
+            "<info>Module UserModule already exist in config file</info>",
+            "<info>Module AuthModule already exist in config file</info>",
+            "<info>Module FakeModule already exist in config file</info>",
+            '<info>Nothing to update in config file.</info>',
+        ];
         $this->io
             ->expects(self::exactly(5))
-            ->method('write');
+            ->method('write')
+            ->with(self::callback(self::getIoMessageCallback($messages)));
         $return = $this->plugin->writeConfigFile($configFile, $modules);
         $this->assertTrue(false === $return);
     }
