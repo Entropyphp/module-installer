@@ -547,8 +547,12 @@ PHP;
                 }
             );
 
-        // '<info>      Found pg-module: FakeModule</info>'
-        $this->io->expects(self::once())->method('write');
+        //
+        $messages = ['<info>      Found pg-module: FakeModule</info>'];
+        $this->io
+            ->expects(self::once())
+            ->method('write')
+            ->with(self::callback(self::getIoMessageCallback($messages)));
         $modules = $this->plugin->findModuleClass($plugin1, $path);
         $this->assertSame(['FakeModule\FakeModule' => 'FakeModule'], $modules);
     }
