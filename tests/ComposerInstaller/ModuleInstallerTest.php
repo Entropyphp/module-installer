@@ -591,7 +591,17 @@ PHP;
 
         $expected = $this->getFullContentConfigFile();
 
-        $this->io->expects(self::exactly(5))->method('write');
+        $messages = [
+            "<info>Config file\n $configFile \n don't exist in this project, writing dummy file</info>",
+            '<info>Write module RouterModule in config file</info>',
+            '<info>Write module UserModule in config file</info>',
+            '<info>Write module AuthModule in config file</info>',
+            '<info>Write module FakeModule in config file</info>',
+        ];
+        $this->io
+            ->expects(self::exactly(5))
+            ->method('write')
+            ->with(self::callback(self::getIoMessageCallback($messages)));
         $return = $this->plugin->writeConfigFile($configFile, $modules);
         $this->assertFileExists($this->path . '/src/Bootstrap/PgFramework.php');
         $this->assertTrue(true === $return);
