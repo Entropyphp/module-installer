@@ -203,9 +203,14 @@ php;
             $plugin2,
         ];
 
+        $messages = [
+            '<info>  Found pg-module type package: pg-framework/router</info>',
+            '<info>  Found pg-module type package: pg-framework/auth</info>',
+        ];
         $this->io
             ->expects(self::exactly(2))
-            ->method('write');
+            ->method('write')
+            ->with(self::callback(self::getIoMessageCallback($messages)));
 
         $return = $this->plugin->findModulesPackages($packages);
 
@@ -226,9 +231,14 @@ php;
         $this->mockInstalledRepository
             ->method('getPackages')
             ->willReturn($packages);
+        $messages = [
+            '<info>Search pg-modules packages</info>',
+            '<info>pg-modules packages not found, abort</info>',
+        ];
         $this->io
             ->expects(self::exactly(2))
-            ->method('write');
+            ->method('write')
+            ->with(self::callback(self::getIoMessageCallback($messages)));
         $this->plugin->postAutoloadDump($event);
     }
 
@@ -277,6 +287,12 @@ php;
         $this->mockInstalledRepository
             ->method('getPackages')
             ->willReturn($packages);
+        $messages = [
+            '<info>Search pg-modules packages</info>',
+            '<info>  Found pg-module type package: pg-framework/router</info>',
+            '<info>  Found pg-module type package: pg-framework/auth</info>',
+            '<info>pg-modules not found in packages, abort</info>',
+        ];
         $this->io
             ->expects(self::exactly(4))
             ->method('write');
