@@ -547,7 +547,6 @@ PHP;
                 }
             );
 
-        //
         $messages = ['<info>      Found pg-module: FakeModule</info>'];
         $this->io
             ->expects(self::once())
