@@ -210,7 +210,7 @@ class ModuleInstaller implements
         return $files;
     }
 
-    public function getFiles(string $path, string $ext = 'php', ?string $exclude = null): array
+    private function getFiles(string $path, string $ext = 'php', ?string $exclude = null): array
     {
         // from https://stackoverflow.com/a/41636321
         return iterator_to_array(
