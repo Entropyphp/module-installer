@@ -498,7 +498,7 @@ PHP;
 
     public function testFindModuleClassSkipPsr0()
     {
-        $path = $this->path . '/vendor/pgframework/fake-module/src/FakeModule.php';
+        $path = $this->path . '/vendor/pgframework/fake-module';
         $plugin1 = new Package('pgframework/fake-module', '1.0', '1.0');
         $plugin1->setType('pg-module');
         $plugin1->setAutoload([
