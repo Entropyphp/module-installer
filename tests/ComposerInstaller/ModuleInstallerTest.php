@@ -19,6 +19,7 @@ use PgFramework\ComposerInstaller\ModuleInstaller;
 use PHPUnit\Framework\MockObject\Exception;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use function PHPUnit\Framework\callback;
 
 class ModuleInstallerTest extends TestCase
 {
@@ -244,7 +245,7 @@ php;
 
     protected function getGoodPackages(): array
     {
-        $plugin1 = new Package('pg-framework/router', '1.0', '1.0');
+        $plugin1 = new Package('pgframework/router', '1.0', '1.0');
         $plugin1->setType('pg-module');
         $plugin1->setAutoload([
             'psr-4' => [
@@ -252,7 +253,7 @@ php;
             ],
         ]);
 
-        $plugin2 = new Package('pg-framework/auth', '1.0', '1.0');
+        $plugin2 = new Package('pgframework/auth', '1.0', '1.0');
         $plugin2->setType('pg-module');
         $plugin2->setAutoload([
             'psr-4' => [
@@ -289,14 +290,60 @@ php;
             ->willReturn($packages);
         $messages = [
             '<info>Search pg-modules packages</info>',
-            '<info>  Found pg-module type package: pg-framework/router</info>',
-            '<info>  Found pg-module type package: pg-framework/auth</info>',
+            '<info>  Found pg-module type package: pgframework/router</info>',
+            '<info>  Found pg-module type package: pgframework/auth</info>',
             '<info>pg-modules not found in packages, abort</info>',
         ];
         $this->io
             ->expects(self::exactly(4))
             ->method('write')
             ->with(self::callback(self::getIoMessageCallback($messages)));
+        $this->plugin->postAutoloadDump($event);
+    }
+
+    /**
+     * @throws Exception
+     */
+    public function testPostAutoloadDumpOk()
+    {
+        $content = $this->getModuleClassTemplate();
+
+        $routerNs = 'Router';
+        $routerClass = 'RouterModule';
+        $this->createPhpFile(
+            'vendor/pgframework/router/src/RouterModule.php',
+            sprintf($content, $routerNs, $routerClass)
+        );
+        $this->assertFileExists($this->path . '/vendor/pgframework/router/src/RouterModule.php');
+
+        $authNs = 'Auth\Auth';
+        $authClass = 'AuthModule';
+        $this->createPhpFile(
+            'vendor/pgframework/auth/src/Auth/AuthModule.php',
+            sprintf($content, $authNs, $authClass)
+        );
+        $this->assertFileExists($this->path . '/vendor/pgframework/auth/src/Auth/AuthModule.php');
+        $this->assertFileExists($this->path . '/vendor/pgframework/auth/src/config.php');
+
+        $packages = $this->getGoodPackages();
+        $this->installationManager
+            ->method('getInstallPath')
+            ->willReturnCallback(
+                function (BasePackage $package) {
+                    return $this->path .
+                        '/vendor/' .
+                        $package->getPrettyName() .
+                        $package->getTargetDir();
+                }
+            );
+        $event = $this->createMock(Event::class);
+        $this->mockInstalledRepository
+            ->method('getPackages')
+            ->willReturn($packages);
+        $this->io
+            ->expects(self::exactly(7))
+            ->method('write');
+            //->with(self::callback(self::getIoMessageCallback([])));
         $this->plugin->postAutoloadDump($event);
     }
 
@@ -433,6 +480,32 @@ PHP;
             ->with(self::callback(self::getIoMessageCallback($messages)));
         $modules = $this->plugin->findModulesClass($packages);
         $this->assertSame($expected, $modules);
+    }
+
+    public function testFindModuleClassSkipPsr0()
+    {
+        $path = $this->path . '/vendor/pgframework/fake-module/src/FakeModule.php';
+        $plugin1 = new Package('pgframework/fake-module', '1.0', '1.0');
+        $plugin1->setType('pg-module');
+        $plugin1->setAutoload([
+            'psr-0' => [
+                'FakeModule' => 'src/',
+            ],
+        ]);
+        $this->installationManager
+            ->method('getInstallPath')
+            ->willReturnCallback(
+                function (BasePackage $package) {
+                    return $this->path .
+                        '/vendor/' .
+                        $package->getPrettyName() .
+                        $package->getTargetDir();
+                }
+            );
+
+        $this->io->expects(self::never())->method('write');
+        $modules = $this->plugin->findModuleClass($plugin1, $path);
+        $this->assertSame([], $modules);
     }
 
     public function testGetModuleClass()
