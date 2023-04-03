@@ -147,124 +147,11 @@ php;
         $this->createPhpFile('src/Bootstrap/PgFramework.php', $content);
     }
 
-    public static function getIoMessageCallback(array $messages): \Closure
-    {
-        return function ($arg) use ($messages) {
-            if (is_string($arg) && in_array($arg, $messages)) {
-                return true;
-            }
-            return false;
-        };
-    }
-
     protected function createPhpFile(string $path, string $content): string
     {
         $path = $this->path . '/' . $path;
         file_put_contents($path, $content);
         return $path;
-    }
-
-    protected function getGoodPackages(): array
-    {
-        $plugin1 = $this->createPackage('pgframework/router', 'Router');
-        $plugin2 = $this->createPackage('pgframework/auth', 'Auth');
-
-        return [
-            $plugin1,
-            new Package('SomethingElse', '1.0', '1.0'),
-            $plugin2,
-        ];
-    }
-
-    protected function getNoPgModulePackages(): array
-    {
-        $plugin1 = $this->createPackage('pg-framework/router', 'Router', 'library');
-        $plugin2 = $this->createPackage('pg-framework/auth', 'Auth', 'library');
-
-        return [
-            $plugin1,
-            new Package('SomethingElse', '1.0', '1.0'),
-            $plugin2,
-        ];
-    }
-
-    protected function createPackage(string $name, string $namespace, string $type = 'pg-module'): Package
-    {
-        $plugin = new Package($name, '1.0', '1.0');
-        $plugin->setType($type);
-        $plugin->setAutoload([
-            'psr-4' => [
-                $namespace => 'src/',
-            ],
-        ]);
-        return $plugin;
-    }
-
-    /**
-     * @param string $path Relative path
-     * @param string $content Module class template
-     * @param string $name Package name
-     * @param string $namespace Module class Namespace
-     * @param string $class Class name
-     * @return Package
-     */
-    protected function createFileAndPackage(
-        string $path,
-        string $content,
-        string $name,
-        string $namespace,
-        string $class
-    ): Package {
-        $this->createPhpFile(
-            $path,
-            sprintf($content, $namespace, $class)
-        );
-        $this->assertFileExists($this->path . '/' . $path);
-        return $this->createPackage($name, $namespace);
-    }
-
-    protected function getModuleClassTemplate(): string
-    {
-        return <<<PHP
-<?php
-
-declare(strict_types=1);
-
-namespace %s;
-
-use PgFramework\Module;
-
-class %s extends Module
-{
-}
-
-PHP;
-    }
-
-    protected function getFullContentConfigFile(): string
-    {
-        return <<<PHP
-<?php
-
-/** This file is auto generated, do not edit */
-
-declare(strict_types=1);
-
-use Router\RouterModule;
-use Auth\Auth\UserModule;
-use Auth\Auth\AuthModule;
-use FakeModule\FakeModule;
-
-return [
-    'modules' => [
-               RouterModule::class,
-               UserModule::class,
-               AuthModule::class,
-               FakeModule::class,
-    ]
-];
-
-PHP;
     }
 
     public function testGetSubscribedEvents()
@@ -309,6 +196,28 @@ PHP;
         $this->assertSame($expected, $return);
     }
 
+    protected function createPackage(string $name, string $namespace, string $type = 'pg-module'): Package
+    {
+        $plugin = new Package($name, '1.0', '1.0');
+        $plugin->setType($type);
+        $plugin->setAutoload([
+            'psr-4' => [
+                $namespace => 'src/',
+            ],
+        ]);
+        return $plugin;
+    }
+
+    public static function getIoMessageCallback(array $messages): \Closure
+    {
+        return function ($arg) use ($messages) {
+            if (is_string($arg) && in_array($arg, $messages)) {
+                return true;
+            }
+            return false;
+        };
+    }
+
     /**
      * @throws Exception
      */
@@ -328,6 +237,18 @@ PHP;
             ->method('write')
             ->with(self::callback(self::getIoMessageCallback($messages)));
         $this->plugin->postAutoloadDump($event);
+    }
+
+    protected function getNoPgModulePackages(): array
+    {
+        $plugin1 = $this->createPackage('pg-framework/router', 'Router', 'library');
+        $plugin2 = $this->createPackage('pg-framework/auth', 'Auth', 'library');
+
+        return [
+            $plugin1,
+            new Package('SomethingElse', '1.0', '1.0'),
+            $plugin2,
+        ];
     }
 
     /**
@@ -361,6 +282,18 @@ PHP;
             ->method('write')
             ->with(self::callback(self::getIoMessageCallback($messages)));
         $this->plugin->postAutoloadDump($event);
+    }
+
+    protected function getGoodPackages(): array
+    {
+        $plugin1 = $this->createPackage('pgframework/router', 'Router');
+        $plugin2 = $this->createPackage('pgframework/auth', 'Auth');
+
+        return [
+            $plugin1,
+            new Package('SomethingElse', '1.0', '1.0'),
+            $plugin2,
+        ];
     }
 
     /**
@@ -417,6 +350,24 @@ PHP;
             ->method('write')
             ->with(self::callback(self::getIoMessageCallback($messages)));
         $this->plugin->postAutoloadDump($event);
+    }
+
+    protected function getModuleClassTemplate(): string
+    {
+        return <<<PHP
+<?php
+
+declare(strict_types=1);
+
+namespace %s;
+
+use PgFramework\Module;
+
+class %s extends Module
+{
+}
+
+PHP;
     }
 
     public function testFindModulesPackagesEmpty()
@@ -494,6 +445,29 @@ PHP;
             ->with(self::callback(self::getIoMessageCallback($messages)));
         $modules = $this->plugin->findModulesClass($packages);
         $this->assertSame($expected, $modules);
+    }
+
+    /**
+     * @param string $path Relative path
+     * @param string $content Module class template
+     * @param string $name Package name
+     * @param string $namespace Module class Namespace
+     * @param string $class Class name
+     * @return Package
+     */
+    protected function createFileAndPackage(
+        string $path,
+        string $content,
+        string $name,
+        string $namespace,
+        string $class
+    ): Package {
+        $this->createPhpFile(
+            $path,
+            sprintf($content, $namespace, $class)
+        );
+        $this->assertFileExists($this->path . '/' . $path);
+        return $this->createPackage($name, $namespace);
     }
 
     public function testFindModuleClassSkipPsr0()
@@ -599,6 +573,32 @@ PHP;
             str_replace(["\t", "\n", "\r", ' '], '', $expected),
             str_replace(["\t", "\n", "\r", ' '], '', $content)
         );
+    }
+
+    protected function getFullContentConfigFile(): string
+    {
+        return <<<PHP
+<?php
+
+/** This file is auto generated, do not edit */
+
+declare(strict_types=1);
+
+use Router\RouterModule;
+use Auth\Auth\UserModule;
+use Auth\Auth\AuthModule;
+use FakeModule\FakeModule;
+
+return [
+    'modules' => [
+               RouterModule::class,
+               UserModule::class,
+               AuthModule::class,
+               FakeModule::class,
+    ]
+];
+
+PHP;
     }
 
     public function testWriteConfigFileSkipModuleExists()

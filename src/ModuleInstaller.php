@@ -27,14 +27,6 @@ class ModuleInstaller implements
     private int $writeLockEx = LOCK_EX;
 
     /**
-     * @param int $writeLockEx
-     */
-    public function setWriteLockEx(int $writeLockEx = 0): void
-    {
-        $this->writeLockEx = $writeLockEx;
-    }
-
-    /**
      * Called whenever composer (re)generates the autoloader.
      *
      * Recreates PgFramework Module path map, based on composer information
@@ -52,39 +44,6 @@ class ModuleInstaller implements
         $instance->composer = $composer;
         $instance->io = $io;
         $instance->postAutoloadDump($event);
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public function activate(Composer $composer, IOInterface $io)
-    {
-        $this->composer = $composer;
-        $this->io = $io;
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public function deactivate(Composer $composer, IOInterface $io)
-    {
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public function uninstall(Composer $composer, IOInterface $io)
-    {
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public static function getSubscribedEvents(): array
-    {
-        return [
-            ScriptEvents::POST_AUTOLOAD_DUMP => 'postAutoloadDump',
-        ];
     }
 
     /**
@@ -134,17 +93,6 @@ class ModuleInstaller implements
             }
         }
         return $modulesPackages;
-    }
-
-    public function getConfigFile(string $projectDir): string
-    {
-        return $projectDir .
-            DIRECTORY_SEPARATOR .
-            'src' .
-            DIRECTORY_SEPARATOR .
-            'Bootstrap' .
-            DIRECTORY_SEPARATOR .
-            'PgFramework.php';
     }
 
     /**
@@ -234,16 +182,14 @@ class ModuleInstaller implements
 
     public function getModulesClass(array $files): array
     {
-        $modules = [];
         /** @var SplFileInfo $file */
         foreach ($files as $file) {
             $content = file_get_contents((string)$file);
-            if (
-                preg_match(
-                    '/namespace\s+(\S+)\s*;[\s\W\w]+class\s+(\S+)\s+extends\s+Module/',
-                    $content,
-                    $m
-                )
+            if (preg_match(
+                '/namespace\s+(\S+)\s*;[\s\W\w]+class\s+(\S+)\s+extends\s+Module/',
+                $content,
+                $m
+            )
             ) {
                 $namespace = $m[1];
                 $moduleName = $m[2];
@@ -257,6 +203,17 @@ class ModuleInstaller implements
             }
         }
         return $this->modules;
+    }
+
+    public function getConfigFile(string $projectDir): string
+    {
+        return $projectDir .
+            DIRECTORY_SEPARATOR .
+            'src' .
+            DIRECTORY_SEPARATOR .
+            'Bootstrap' .
+            DIRECTORY_SEPARATOR .
+            'PgFramework.php';
     }
 
     public function writeConfigFile(string $configFile, array $modules): bool
@@ -332,5 +289,46 @@ return [
 
 php;
         return file_put_contents($configFile, sprintf($content, $useStr, $modulesStr), $this->writeLockEx);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public static function getSubscribedEvents(): array
+    {
+        return [
+            ScriptEvents::POST_AUTOLOAD_DUMP => 'postAutoloadDump',
+        ];
+    }
+
+    /**
+     * @param int $writeLockEx
+     */
+    public function setWriteLockEx(int $writeLockEx = 0): void
+    {
+        $this->writeLockEx = $writeLockEx;
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function activate(Composer $composer, IOInterface $io)
+    {
+        $this->composer = $composer;
+        $this->io = $io;
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function deactivate(Composer $composer, IOInterface $io)
+    {
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function uninstall(Composer $composer, IOInterface $io)
+    {
     }
 }
