@@ -535,18 +535,7 @@ PHP;
             $fakeNs,
             $fakeClass
         );
-        $path = $this->path . '/vendor/pgframework/fake-module';
-        $this->installationManager
-            ->method('getInstallPath')
-            ->willReturnCallback(
-                function (BasePackage $package) {
-                    return $this->path .
-                        '/vendor/' .
-                        $package->getPrettyName() .
-                        $package->getTargetDir();
-                }
-            );
-
+        $path = $this->path . '/vendor/' . $plugin1->getPrettyName() . $plugin1->getTargetDir();
         $messages = ['<info>      Found pg-module: FakeModule</info>'];
         $this->io
             ->expects(self::once())
