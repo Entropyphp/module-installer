@@ -506,16 +506,6 @@ PHP;
                 'FakeModule' => 'src/',
             ],
         ]);
-        $this->installationManager
-            ->method('getInstallPath')
-            ->willReturnCallback(
-                function (BasePackage $package) {
-                    return $this->path .
-                        '/vendor/' .
-                        $package->getPrettyName() .
-                        $package->getTargetDir();
-                }
-            );
 
         $this->io->expects(self::never())->method('write');
         $modules = $this->plugin->findModuleClass($plugin1, $path);
