@@ -153,6 +153,14 @@ class ModuleInstaller implements
         foreach ($result as $dir) {
             if (is_dir($dir)) {
                 $files = $this->getFiles($dir, 'php', '.dist.');
+                $files = array_reduce(
+                    $files,
+                    function (array $initial, \SplFileInfo $file) {
+                        $initial[] = str_replace('\\', '/', (string)$file);
+                        return $initial;
+                    },
+                    []
+                );
             }
         }
         return $files;
