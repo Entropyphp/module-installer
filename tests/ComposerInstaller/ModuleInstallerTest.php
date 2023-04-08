@@ -58,7 +58,7 @@ class ModuleInstallerTest extends TestCase
             'pgframework' => [
                 'router' => [
                     'src' => [
-                        'RouterModule.php' => 'RouterModule.php'
+                        'RouterModule.php' => 'RouterModule.php',
                     ]
                 ],
                 'auth' => [
@@ -71,7 +71,9 @@ class ModuleInstallerTest extends TestCase
                 ],
                 'fake-module' => [
                     'src' => [
-                        'FakeModule.php' => 'FakeModule.php'
+                        'FakeModule.php' => 'FakeModule.php',
+                        'index.html' => 'index.html',
+                        'Module.dist.php' => 'Module.dist.php',
                     ]
                 ]
             ]
@@ -541,6 +543,26 @@ PHP;
         $modules = $this->plugin->getModulesClass($files);
         $this->assertCount(2, $modules);
         $this->assertSame($expected, $modules);
+    }
+
+    public function testGetFiles()
+    {
+        $expected = [
+            $this->path . '/vendor/pgframework/fake-module/src/FakeModule.php',
+        ];
+        $dir = $this->path . '/vendor/pgframework/fake-module/src/';
+        $files = $this->plugin->getFiles($dir, 'php', '.dist.');
+        $this->assertSame(
+            $expected,
+            array_reduce(
+                $files,
+                function (array $initial, \SplFileInfo $file) {
+                    $initial[] = str_replace('\\', '/', (string)$file);
+                    return $initial;
+                },
+                []
+            )
+        );
     }
 
     public function testWriteConfigFile()

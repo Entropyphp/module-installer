@@ -152,13 +152,13 @@ class ModuleInstaller implements
         $files = [];
         foreach ($result as $dir) {
             if (is_dir($dir)) {
-                $files = $this->getFiles($dir);
+                $files = $this->getFiles($dir, 'php', '.dist.');
             }
         }
         return $files;
     }
 
-    private function getFiles(string $path, string $ext = 'php', ?string $exclude = null): array
+    public function getFiles(string $path, string $ext = 'php', ?string $exclude = null): array
     {
         // from https://stackoverflow.com/a/41636321
         return iterator_to_array(
@@ -167,14 +167,14 @@ class ModuleInstaller implements
                     new RecursiveDirectoryIterator(
                         $path,
                         FilesystemIterator::FOLLOW_SYMLINKS | FilesystemIterator::SKIP_DOTS
-                    )
+                    ),
+                    RecursiveIteratorIterator::CHILD_FIRST
                 ),
                 function (SplFileInfo $file) use ($ext, $exclude) {
                     return $file->isFile() &&
-                        (!str_starts_with($file->getBasename(), '.') &&
-                        null !== $exclude ?
-                            !(stripos($file->getBasename(), $exclude)) :
-                            str_ends_with($file->getFilename(), '.' . $ext));
+                        str_ends_with($file->getFilename(), '.' . $ext) &&
+                        !str_starts_with($file->getBasename(), '.') &&
+                        (null === $exclude || false === stripos($file->getBasename(), $exclude));
                 }
             )
         );
