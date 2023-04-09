@@ -149,11 +149,106 @@ php;
         $this->createPhpFile('src/Bootstrap/PgFramework.php', $content);
     }
 
+    protected function getModuleClassTemplate(): string
+    {
+        return <<<PHP
+<?php
+
+declare(strict_types=1);
+
+namespace %s;
+
+use PgFramework\Module;
+
+class %s extends Module
+{
+}
+
+PHP;
+    }
+
     protected function createPhpFile(string $path, string $content): string
     {
         $path = $this->path . '/' . $path;
         file_put_contents($path, $content);
         return $path;
+    }
+
+    protected function createPackage(string $name, string $namespace, string $type = 'pg-module'): Package
+    {
+        $plugin = new Package($name, '1.0', '1.0');
+        $plugin->setType($type);
+        $plugin->setAutoload([
+            'psr-4' => [
+                $namespace => 'src/',
+            ],
+        ]);
+        return $plugin;
+    }
+
+    /**
+     * @param string $path Relative path
+     * @param string $content Module class template
+     * @param string $name Package name
+     * @param string $namespace Module class Namespace
+     * @param string $class Class name
+     * @return Package
+     */
+    protected function createFileAndPackage(
+        string $path,
+        string $content,
+        string $name,
+        string $namespace,
+        string $class
+    ): Package {
+        $classPath = $this->createPhpFile(
+            $path,
+            sprintf($content, $namespace, $class)
+        );
+        $this->assertFileExists($classPath);
+        return $this->createPackage($name, $namespace);
+    }
+
+    public static function getIoMessageCallback(array $messages): \Closure
+    {
+        return function ($arg) use ($messages) {
+            if (is_string($arg) && in_array($arg, $messages)) {
+                return true;
+            }
+            return false;
+        };
+    }
+
+    public static function getInstallPathCallback(string $path): \Closure
+    {
+        return fn (BasePackage $package) =>
+            $path .
+            $package->getPrettyName() .
+            $package->getTargetDir();
+    }
+
+    protected function getNoPgModulePackages(): array
+    {
+        $plugin1 = $this->createPackage('pg-framework/router', 'Router', 'library');
+        $plugin2 = $this->createPackage('pg-framework/auth', 'Auth', 'library');
+
+        return [
+            $plugin1,
+            new Package('SomethingElse', '1.0', '1.0'),
+            $plugin2,
+        ];
+    }
+
+    protected function getGoodPackages(): array
+    {
+        $plugin1 = $this->createPackage('pgframework/router', 'Router');
+        $plugin2 = $this->createPackage('pgframework/auth', 'Auth');
+
+        return [
+            $plugin1,
+            new Package('SomethingElse', '1.0', '1.0'),
+            $plugin2,
+        ];
     }
 
     public function testGetSubscribedEvents()
@@ -198,28 +293,6 @@ php;
         $this->assertSame($expected, $return);
     }
 
-    protected function createPackage(string $name, string $namespace, string $type = 'pg-module'): Package
-    {
-        $plugin = new Package($name, '1.0', '1.0');
-        $plugin->setType($type);
-        $plugin->setAutoload([
-            'psr-4' => [
-                $namespace => 'src/',
-            ],
-        ]);
-        return $plugin;
-    }
-
-    public static function getIoMessageCallback(array $messages): \Closure
-    {
-        return function ($arg) use ($messages) {
-            if (is_string($arg) && in_array($arg, $messages)) {
-                return true;
-            }
-            return false;
-        };
-    }
-
     /**
      * @throws Exception
      */
@@ -241,18 +314,6 @@ php;
         $this->plugin->postAutoloadDump($event);
     }
 
-    protected function getNoPgModulePackages(): array
-    {
-        $plugin1 = $this->createPackage('pg-framework/router', 'Router', 'library');
-        $plugin2 = $this->createPackage('pg-framework/auth', 'Auth', 'library');
-
-        return [
-            $plugin1,
-            new Package('SomethingElse', '1.0', '1.0'),
-            $plugin2,
-        ];
-    }
-
     /**
      * @throws Exception
      */
@@ -261,13 +322,7 @@ php;
         $packages = $this->getGoodPackages();
         $this->installationManager
             ->method('getInstallPath')
-            ->willReturnCallback(
-                fn (BasePackage $package) =>
-                    $this->path .
-                    '/src/' .
-                    $package->getPrettyName() .
-                    $package->getTargetDir()
-            );
+            ->willReturnCallback(self::getInstallPathCallback($this->path . '/src/'));
         $event = $this->createMock(Event::class);
         $this->mockInstalledRepository
             ->method('getPackages')
@@ -283,18 +338,6 @@ php;
             ->method('write')
             ->with(self::callback(self::getIoMessageCallback($messages)));
         $this->plugin->postAutoloadDump($event);
-    }
-
-    protected function getGoodPackages(): array
-    {
-        $plugin1 = $this->createPackage('pgframework/router', 'Router');
-        $plugin2 = $this->createPackage('pgframework/auth', 'Auth');
-
-        return [
-            $plugin1,
-            new Package('SomethingElse', '1.0', '1.0'),
-            $plugin2,
-        ];
     }
 
     /**
@@ -324,13 +367,7 @@ php;
         $packages = $this->getGoodPackages();
         $this->installationManager
             ->method('getInstallPath')
-            ->willReturnCallback(
-                fn (BasePackage $package) =>
-                    $this->path .
-                    '/vendor/' .
-                    $package->getPrettyName() .
-                    $package->getTargetDir()
-            );
+            ->willReturnCallback(self::getInstallPathCallback($this->path . '/vendor/'));
         $event = $this->createMock(Event::class);
         $this->mockInstalledRepository
             ->method('getPackages')
@@ -350,24 +387,6 @@ php;
             ->method('write')
             ->with(self::callback(self::getIoMessageCallback($messages)));
         $this->plugin->postAutoloadDump($event);
-    }
-
-    protected function getModuleClassTemplate(): string
-    {
-        return <<<PHP
-<?php
-
-declare(strict_types=1);
-
-namespace %s;
-
-use PgFramework\Module;
-
-class %s extends Module
-{
-}
-
-PHP;
     }
 
     public function testFindModulesPackagesEmpty()
@@ -425,13 +444,7 @@ PHP;
 
         $this->installationManager
             ->method('getInstallPath')
-            ->willReturnCallback(
-                fn (BasePackage $package) =>
-                    $this->path .
-                    '/vendor/' .
-                    $package->getPrettyName() .
-                    $package->getTargetDir()
-            );
+            ->willReturnCallback(self::getInstallPathCallback($this->path . '/vendor/'));
 
         $messages = [
             "<info>      Found pg-module: $routerClass</info>",
@@ -444,29 +457,6 @@ PHP;
             ->with(self::callback(self::getIoMessageCallback($messages)));
         $modules = $this->plugin->findModulesClass($packages);
         $this->assertSame($expected, $modules);
-    }
-
-    /**
-     * @param string $path Relative path
-     * @param string $content Module class template
-     * @param string $name Package name
-     * @param string $namespace Module class Namespace
-     * @param string $class Class name
-     * @return Package
-     */
-    protected function createFileAndPackage(
-        string $path,
-        string $content,
-        string $name,
-        string $namespace,
-        string $class
-    ): Package {
-        $this->createPhpFile(
-            $path,
-            sprintf($content, $namespace, $class)
-        );
-        $this->assertFileExists($this->path . '/' . $path);
-        return $this->createPackage($name, $namespace);
     }
 
     public function testFindModuleClassSkipPsr0()
