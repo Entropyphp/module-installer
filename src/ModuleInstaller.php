@@ -174,12 +174,10 @@ class ModuleInstaller implements
                     ),
                     RecursiveIteratorIterator::CHILD_FIRST
                 ),
-                function (SplFileInfo $file) use ($ext, $exclude) {
-                    return $file->isFile() &&
-                        str_ends_with($file->getFilename(), '.' . $ext) &&
-                        !str_starts_with($file->getBasename(), '.') &&
-                        (null === $exclude || false === stripos($file->getBasename(), $exclude));
-                }
+                fn (SplFileInfo $file) => $file->isFile() &&
+                    str_ends_with($file->getFilename(), '.' . $ext) &&
+                    !str_starts_with($file->getBasename(), '.') &&
+                    (null === $exclude || false === stripos($file->getBasename(), $exclude))
             )
         );
     }
