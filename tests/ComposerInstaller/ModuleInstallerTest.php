@@ -262,12 +262,11 @@ php;
         $this->installationManager
             ->method('getInstallPath')
             ->willReturnCallback(
-                function (BasePackage $package) {
-                    return $this->path .
-                        '/src/' .
-                        $package->getPrettyName() .
-                        $package->getTargetDir();
-                }
+                fn (BasePackage $package) =>
+                    $this->path .
+                    '/src/' .
+                    $package->getPrettyName() .
+                    $package->getTargetDir()
             );
         $event = $this->createMock(Event::class);
         $this->mockInstalledRepository
@@ -326,12 +325,11 @@ php;
         $this->installationManager
             ->method('getInstallPath')
             ->willReturnCallback(
-                function (BasePackage $package) {
-                    return $this->path .
-                        '/vendor/' .
-                        $package->getPrettyName() .
-                        $package->getTargetDir();
-                }
+                fn (BasePackage $package) =>
+                    $this->path .
+                    '/vendor/' .
+                    $package->getPrettyName() .
+                    $package->getTargetDir()
             );
         $event = $this->createMock(Event::class);
         $this->mockInstalledRepository
@@ -428,12 +426,11 @@ PHP;
         $this->installationManager
             ->method('getInstallPath')
             ->willReturnCallback(
-                function (BasePackage $package) {
-                    return $this->path .
-                        '/vendor/' .
-                        $package->getPrettyName() .
-                        $package->getTargetDir();
-                }
+                fn (BasePackage $package) =>
+                    $this->path .
+                    '/vendor/' .
+                    $package->getPrettyName() .
+                    $package->getTargetDir()
             );
 
         $messages = [
