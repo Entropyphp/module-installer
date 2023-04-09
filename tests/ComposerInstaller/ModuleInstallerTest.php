@@ -554,13 +554,9 @@ PHP;
         $files = $this->plugin->getFiles($dir, 'php', '.dist.');
         $this->assertSame(
             $expected,
-            array_reduce(
-                $files,
-                function (array $initial, \SplFileInfo $file) {
-                    $initial[] = str_replace('\\', '/', (string)$file);
-                    return $initial;
-                },
-                []
+            array_map(
+                fn (string $file) => str_replace('\\', '/', $file),
+                array_keys($files)
             )
         );
     }

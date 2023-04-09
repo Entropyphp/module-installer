@@ -147,19 +147,15 @@ class ModuleInstaller implements
         return $result;
     }
 
-    public function getPhpFiles(array $result): array
+    public function getPhpFiles(array $paths): array
     {
         $files = [];
-        foreach ($result as $dir) {
+        foreach ($paths as $dir) {
             if (is_dir($dir)) {
                 $files = $this->getFiles($dir, 'php', '.dist.');
-                $files = array_reduce(
-                    $files,
-                    function (array $initial, \SplFileInfo $file) {
-                        $initial[] = str_replace('\\', '/', (string)$file);
-                        return $initial;
-                    },
-                    []
+                $files = array_map(
+                    fn (string $file) => str_replace('\\', '/', $file),
+                    array_keys($files)
                 );
             }
         }
@@ -190,9 +186,8 @@ class ModuleInstaller implements
 
     public function getModulesClass(array $files): array
     {
-        /** @var SplFileInfo $file */
         foreach ($files as $file) {
-            $content = file_get_contents((string)$file);
+            $content = file_get_contents($file);
             if (preg_match(
                 '/namespace\s+(\S+)\s*;[\s\W\w]+class\s+(\S+)\s+extends\s+Module/',
                 $content,
