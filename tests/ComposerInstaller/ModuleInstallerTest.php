@@ -349,19 +349,19 @@ PHP;
 
         $routerNs = 'Router';
         $routerClass = 'RouterModule';
-        $this->createPhpFile(
+        $routerModulePath = $this->createPhpFile(
             'vendor/pgframework/router/src/RouterModule.php',
             sprintf($content, $routerNs, $routerClass)
         );
-        $this->assertFileExists($this->path . '/vendor/pgframework/router/src/RouterModule.php');
+        $this->assertFileExists($routerModulePath);
 
         $authNs = 'Auth\Auth';
         $authClass = 'AuthModule';
-        $this->createPhpFile(
+        $authModulePath = $this->createPhpFile(
             'vendor/pgframework/auth/src/Auth/AuthModule.php',
             sprintf($content, $authNs, $authClass)
         );
-        $this->assertFileExists($this->path . '/vendor/pgframework/auth/src/Auth/AuthModule.php');
+        $this->assertFileExists($authModulePath);
         $this->assertFileExists($this->path . '/vendor/pgframework/auth/src/config.php');
 
         $packages = $this->getGoodPackages();
