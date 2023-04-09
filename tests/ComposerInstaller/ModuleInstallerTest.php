@@ -120,9 +120,6 @@ class ModuleInstallerTest extends TestCase
             ->method('getLocalRepository')
             ->willReturn($this->mockInstalledRepository);
 
-        $mockPlugin = $this->getMockBuilder(ModuleInstaller::class)->getMock();
-        $this->mockPlugin = $mockPlugin;
-
         $installationManager = $this->createMock(InstallationManager::class);
         $this->installationManager = $installationManager;
         $this->mockComposer->method('getInstallationManager')->willReturn($this->installationManager);
