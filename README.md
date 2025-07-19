@@ -1,9 +1,8 @@
 # pg-module-installer
 
-
-![Build Status](https://github.com/willy68/pg-module-installer/actions/workflows/php.yml/badge.svg?branch=main)
-[![Latest Stable Version](https://img.shields.io/github/v/release/willy68/pg-module-installer?sort=semver&style=flat-square)](https://packagist.org/packages/willy68/pg-module-installer)
-[![Total Downloads](https://img.shields.io/packagist/dt/willy68/pg-module-installer?style=flat-square)](https://packagist.org/packages/willy68/pg-module-installer/stats)
-[![Software License](https://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat-square)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![PHP Version](https://img.shields.io/badge/php-%3E%3D8.1-blue.svg)](https://php.net)
+[![Coverage Status](https://coveralls.io/repos/github/willy68/pg-module-installer/badge.svg?branch=main)](https://coveralls.io/github/willy68/pg-module-installer?branch=main)
+[![Continuous Integration](https://github.com/willy68/pg-module-installer/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/willy68/pg-module-installer/actions/workflows/ci.yml)
 
 A composer installer for PgFramework Module.
