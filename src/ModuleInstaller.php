@@ -104,7 +104,8 @@ class ModuleInstaller implements
         $modules = [];
         foreach ($packages as $package) {
             $path = $this->composer->getInstallationManager()->getInstallPath($package);
-            $modules = $this->findModuleClass($package, $path);
+            $moduleClasses = $this->findModuleClass($package, $path);
+            $modules = array_merge($modules, $moduleClasses);
         }
         return $modules;
     }
@@ -122,7 +123,8 @@ class ModuleInstaller implements
             foreach ($paths as $path) {
                 $files = $this->getPhpFiles($path);
                 if (!empty($files)) {
-                    $modules = $this->getModulesClass($files);
+                    $newModules = $this->getModulesClass($files);
+                    $modules = array_merge($modules, $newModules);
                 }
             }
         }
@@ -184,14 +186,17 @@ class ModuleInstaller implements
 
     public function getModulesClass(array $files): array
     {
+        // Improved regex pattern with better performance
+        $pattern = '/namespace\s+([a-zA-Z0-9_\\\\]+)\s*;.*?class\s+([a-zA-Z0-9_]+)\s+extends\s+Module/s';
+
         foreach ($files as $file) {
+            // Skip if the file doesn't exist or is not readable
+            if (!is_readable($file)) {
+                continue;
+            }
+
             $content = file_get_contents($file);
-            if (preg_match(
-                '/namespace\s+(\S+)\s*;[\s\W\w]+class\s+(\S+)\s+extends\s+Module/',
-                $content,
-                $m
-            )
-            ) {
+            if (preg_match($pattern, $content, $m)) {
                 $namespace = $m[1];
                 $moduleName = $m[2];
                 $this->modules[$namespace . '\\' . $moduleName] = $moduleName;
