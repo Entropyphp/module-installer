@@ -1,16 +1,16 @@
 {
   "name": "entropyphp/module-installer",
-  "description": "A composer installer for PgFramework Module.",
+  "description": "A composer installer for Pg-Module.",
   "type": "composer-plugin",
   "license": "MIT",
   "authors": [
     {
       "name": "William Lety",
-      "homepage": "https://github.com/willy68"
+      "homepage": "https://github.com/Entropyphp"
     }
   ],
   "require": {
-    "php": ">=8.1",
+    "php": ">=8.2",
     "composer-plugin-api": "^2.0"
   },
   "require-dev": {
