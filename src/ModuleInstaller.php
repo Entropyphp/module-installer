@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace PgFramework\ComposerInstaller;
+namespace Entropy\ComposerInstaller;
 
 use CallbackFilterIterator;
 use Composer\Composer;

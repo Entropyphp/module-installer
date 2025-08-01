@@ -15,37 +15,21 @@ use Composer\Repository\RepositoryManager;
 use Composer\Script\Event;
 use org\bovigo\vfs\vfsStream;
 use org\bovigo\vfs\vfsStreamDirectory;
-use PgFramework\ComposerInstaller\ModuleInstaller;
+use Entropy\ComposerInstaller\ModuleInstaller;
 use PHPUnit\Framework\MockObject\Exception;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
 class ModuleInstallerTest extends TestCase
 {
-
-    /**
-     * @var Composer
-     */
-    protected Composer $composer;
-
-    /**
-     * @var Package
-     */
+    protected Composer|MockObject $mockComposer;
+    protected RepositoryManager|MockObject $mockRepositoryManager;
+    protected InstalledRepositoryInterface|MockObject $mockInstalledRepository;
+    protected InstallationManager|MockObject $installationManager;
     protected Package $package;
-
-    /**
-     * @var IOInterface&MockObject
-     */
-    protected $io;
-
-    /**
-     * @var ModuleInstaller
-     */
+    protected IOInterface|MockObject $io;
+    protected Config|MockObject $mockConfig;
     protected ModuleInstaller $plugin;
-
-    /**
-     * @var vfsStreamDirectory
-     */
     protected vfsStreamDirectory $projectRoot;
 
     protected array $structure = [
