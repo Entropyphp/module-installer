@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ComposerInstaller;
 
+use Closure;
 use Composer\Composer;
 use Composer\Config;
 use Composer\Installer\InstallationManager;
@@ -110,7 +111,7 @@ class ModuleInstallerTest extends TestCase
 
         $this->plugin = new ModuleInstaller();
         // LOCK_EX not working with vfsStream
-        $this->plugin->setWriteLockEx(0);
+        $this->plugin->setWriteLockEx();
         $this->plugin->activate($this->mockComposer, $this->io);
 
         // Init config file
@@ -190,7 +191,7 @@ PHP;
         return $this->createPackage($name, $namespace);
     }
 
-    public static function getIoMessageCallback(array $messages): \Closure
+    public static function getIoMessageCallback(array $messages): Closure
     {
         return function ($arg) use ($messages) {
             if (is_string($arg) && in_array($arg, $messages)) {
@@ -200,7 +201,7 @@ PHP;
         };
     }
 
-    public static function getInstallPathCallback(string $path): \Closure
+    public static function getInstallPathCallback(string $path): Closure
     {
         return fn (BasePackage $package) =>
             $path .
